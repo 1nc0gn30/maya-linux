@@ -1,4 +1,4 @@
-export type DeviceFrameKind = 'physical' | 'generic' | 'none';
+export type DeviceFrameKind = 'physical' | 'generic' | 'browser' | 'terminal' | 'desktop' | 'watch' | 'none';
 
 export interface DeviceColor {
   id: string;
@@ -14,6 +14,14 @@ export interface RectNormalized {
   height: number;
 }
 
+export interface DesktopFrameConfig {
+  title?: string;
+  url?: string;
+  theme?: 'dark' | 'light' | 'translucent';
+  trafficLights?: 'macos' | 'windows' | 'minimal' | 'none';
+  showUrlBar?: boolean;
+}
+
 export interface DeviceModel {
   id: string;
   displayName: string;
@@ -24,6 +32,7 @@ export interface DeviceModel {
   kind: DeviceFrameKind;
   symbol: string;
   defaultColor: DeviceColor;
+  desktopConfig?: DesktopFrameConfig;
 }
 
 export interface DeviceFrame {
@@ -34,6 +43,7 @@ export interface DeviceFrame {
   screenRectNormalized: RectNormalized;
   screenCornerRadiusNormalized: number;
   kind: DeviceFrameKind;
+  desktopConfig?: DesktopFrameConfig;
 }
 
 export type CanvasAspectRatioType = 'square' | 'vertical9x16' | 'vertical4x5' | 'landscape4x3' | 'landscape16x9';
@@ -54,13 +64,40 @@ export interface GradientSpec {
   angleDegrees: number;
 }
 
-export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image' | 'videoBlur';
+export type BackgroundType = 'none' | 'solid' | 'gradient' | 'image' | 'videoBlur' | 'meshGradient';
+
+export type PatternType = 'dots' | 'grid' | 'crosses' | 'circuit' | 'radialLines';
+
+export interface BackgroundPatternConfig {
+  enabled: boolean;
+  type: PatternType;
+  opacity: number; // 0..1
+  colorHex: string;
+  scale: number; // grid size
+}
 
 export interface BackgroundOption {
   type: BackgroundType;
   hex?: string;
   gradient?: GradientSpec;
   imageURL?: string;
+  theme?: 'aurora' | 'cyberpunk' | 'sunset' | 'deepOcean';
+  pattern?: BackgroundPatternConfig;
+}
+
+export type ProgressBarStyle = 'gradient' | 'neonGlow' | 'storyPills' | 'radialClock';
+export type ProgressBarPosition = 'top' | 'bottom' | 'top-pills' | 'bottom-thin';
+
+export interface ProgressBarConfig {
+  enabled: boolean;
+  style: ProgressBarStyle;
+  position: ProgressBarPosition;
+  height: number;
+  colorStart: string;
+  colorEnd: string;
+  pillCount?: number;
+  glowRadius?: number;
+  opacity?: number;
 }
 
 export interface PhoneShadow {
@@ -79,6 +116,17 @@ export interface Device3DTransform {
   rotateZ: number; // Roll (-45 to 45 deg)
   perspective: number; // 800 to 2500
   autoDrift: boolean; // Subtle cinematic parallax drift
+  depthExtrusion?: number; // 0..24 3D chassis thickness
+  specularGlare?: boolean; // Dynamic glass reflection sheen
+  glareIntensity?: number; // 0..1
+}
+
+export interface CursorConfig {
+  enabled: boolean;
+  style: 'macos' | 'dot' | 'laser' | 'glow';
+  colorHex: string;
+  size: number;
+  clickRipples: boolean;
 }
 
 export interface AudioTrack {
@@ -88,10 +136,25 @@ export interface AudioTrack {
   volume: number; // 0..1
   startTime: number; // timeline start in seconds
   duration: number;
-  isMuted: boolean;
+  fadeIn?: number; // seconds (0..5)
+  fadeOut?: number; // seconds (0..5)
+  duckingEnabled?: boolean;
+  duckingAmount?: number; // 0..1 (default 0.3)
+  isMuted?: boolean;
 }
 
-export type ZoomFocus = 'top' | 'center' | 'bottom';
+export type ZoomFocus = 
+  | 'center' 
+  | 'top' 
+  | 'bottom' 
+  | 'left' 
+  | 'right' 
+  | 'top-left' 
+  | 'top-right' 
+  | 'bottom-left' 
+  | 'bottom-right' 
+  | 'custom';
+
 export type AnimationCurve = 'spring' | 'bouncy' | 'smooth' | 'snappy' | 'gentle' | 'linear';
 
 export interface ZoomSegment {
@@ -100,6 +163,8 @@ export interface ZoomSegment {
   duration: number;
   scale: number;
   focus: ZoomFocus;
+  panX?: number; // -1 (left) to 1 (right), default 0 (center)
+  panY?: number; // -1 (top) to 1 (bottom), default 0 (center)
   transitionIn: number;
   transitionOut: number;
   curve: AnimationCurve;
@@ -118,14 +183,99 @@ export interface TapEvent {
   playSound: boolean;
 }
 
+export type SpeedCurvePreset = 'custom' | 'heroRamp' | 'montage' | 'bulletTime' | 'riser';
+
 export interface SpeedSegment {
   id: string;
   startTime: number;
   duration: number;
   rate: number;
+  curvePreset?: SpeedCurvePreset;
 }
 
-export type BadgeStyle = 'pill' | 'frosted' | 'neon' | 'minimal';
+export type ColorGradeType = 
+  | 'none' 
+  | 'cyberpunk' 
+  | 'warmSunset' 
+  | 'vintageVHS' 
+  | 'noir' 
+  | 'studioBoost' 
+  | 'matrix'
+  | 'oppenheimer70mm'
+  | 'duneDesert'
+  | 'bladeRunner'
+  | 'interstellar';
+
+export interface VideoEffectsConfig {
+  colorGrade: ColorGradeType;
+  vignette: number; // 0..1
+  filmGrain: number; // 0..1
+  chromaticAberration: number; // 0..1
+  scanlines: boolean;
+  bloom: number; // 0..1
+  cameraShake: number; // 0..1 (intensity)
+  rgbGlitch: number; // 0..1 (intensity)
+  anamorphicFlare?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    colorHex: string;
+    streakWidth: number; // 0.3..1.0
+  };
+  letterbox?: {
+    enabled: boolean;
+    aspect: '2.39:1' | '2.35:1' | '1.85:1' | '4:3';
+    opacity: number; // 0..1
+  };
+  lightLeaks?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    theme: 'kodakWarm' | 'neonCyan' | 'solarAmber' | 'goldenHour';
+  };
+  proMistGlow?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    radius: number; // 4..32
+  };
+  handheldCamera?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    speed: number; // 0.5..2.0
+  };
+  spotlight?: {
+    enabled: boolean;
+    x: number; // normalized 0..1
+    y: number; // normalized 0..1
+    radius: number; // 0.1..0.8
+    opacity: number; // 0..0.9
+  };
+  deviceGlow?: {
+    enabled: boolean;
+    colorHex: string;
+    radius: number; // 0..40
+  };
+  showSafeZones?: boolean;
+  showGrid?: boolean;
+}
+
+export type SubtitleStyle = 'hormozi' | 'neonGlow' | 'glassCard' | 'minimal' | 'karaoke';
+
+export interface SubtitleItem {
+  id: string;
+  startTime: number;
+  duration: number;
+  text: string;
+  style: SubtitleStyle;
+  fontSize: number; // 18 to 64
+  colorHex: string;
+  strokeHex?: string;
+  bgHex?: string;
+  uppercase?: boolean;
+  positionY?: number; // 0.1 to 0.95 (default ~0.82)
+}
+
+export type BadgeStyle = 'pill' | 'frosted' | 'neon' | 'minimal' | 'speaker-pill' | 'tech-badge' | 'social-cta' | 'launch-tag';
+
+export type LowerThirdPreset = 'speaker-pill' | 'tech-badge' | 'social-cta' | 'launch-tag';
 
 export interface TextOverlay {
   id: string;
@@ -138,6 +288,36 @@ export interface TextOverlay {
   bgColor: string;
   textColor: string;
   fontSize: number; // 12 to 36
+  lowerThirdPreset?: LowerThirdPreset;
+  tag?: string;
+  avatarIcon?: 'user' | 'microphone' | 'sparkles' | 'code' | 'star' | 'rocket' | 'shield' | 'check' | 'zap';
+  socialPlatform?: 'youtube' | 'github' | 'twitter' | 'generic';
+  theme?: string;
+  animationStyle?: 'slide-up' | 'scale-in' | 'bounce-in' | 'fade-slide';
+  accentColor?: string;
+  price?: string;
+  originalPrice?: string;
+}
+
+export type StickerAnimation = 'pop' | 'bounce' | 'pulse' | 'float' | 'spin' | 'none';
+
+export interface StickerItem {
+  id: string;
+  startTime: number;
+  duration: number;
+  emojiOrIcon: string; // e.g. "🔥", "✨", "🚀", "❤️", "👍", "⚡", "💯", "🎯", "👆"
+  position: { x: number; y: number }; // normalized 0..1
+  size: number; // 24 to 120
+  animation: StickerAnimation;
+  rotation?: number; // degrees
+}
+
+export interface WatermarkConfig {
+  enabled: boolean;
+  text?: string;
+  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  opacity: number; // 0..1
+  scale: number; // 0.5..2
 }
 
 export type SelectedEvent = 
@@ -145,5 +325,8 @@ export type SelectedEvent =
   | { type: 'tap'; id: string }
   | { type: 'speed'; id: string }
   | { type: 'overlay'; id: string }
+  | { type: 'subtitle'; id: string }
+  | { type: 'sticker'; id: string }
   | { type: 'audio'; id: string }
+  | { type: 'video'; id: string }
   | null;

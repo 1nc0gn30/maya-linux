@@ -8,7 +8,12 @@ import {
   TapEvent, 
   SpeedSegment, 
   TextOverlay,
-  SelectedEvent 
+  SubtitleItem,
+  StickerItem,
+  WatermarkConfig,
+  VideoEffectsConfig,
+  SelectedEvent,
+  ProgressBarConfig 
 } from './models';
 
 export interface ProjectState {
@@ -27,6 +32,8 @@ export interface ProjectState {
   canvasAspect: CanvasAspectRatioType;
   shadow: PhoneShadow;
   transform3D: Device3DTransform;
+  effects: VideoEffectsConfig;
+  watermark: WatermarkConfig;
 
   deviceModelID: string;
   deviceColorID: string;
@@ -35,10 +42,30 @@ export interface ProjectState {
   bareBezelWidth: number;
   bareBezelHex: string;
 
+  desktopFrame?: {
+    title?: string;
+    url?: string;
+    theme?: 'dark' | 'light' | 'translucent';
+    trafficLights?: 'macos' | 'windows' | 'minimal' | 'none';
+    showUrlBar?: boolean;
+  };
+
+  cursor?: {
+    enabled: boolean;
+    style: 'macos' | 'dot' | 'laser' | 'glow';
+    colorHex: string;
+    size: number;
+    clickRipples: boolean;
+  };
+
+  progressBar?: ProgressBarConfig;
+
   animations: ZoomSegment[];
   tapEvents: TapEvent[];
   speedSegments: SpeedSegment[];
   overlays: TextOverlay[];
+  subtitles: SubtitleItem[];
+  stickers: StickerItem[];
   audioTracks: AudioTrack[];
   selectedEvent: SelectedEvent;
 

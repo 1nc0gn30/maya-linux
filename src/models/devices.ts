@@ -3,23 +3,45 @@ import { DeviceModel, DeviceFrame, CanvasAspectConfig, CanvasAspectRatioType, Gr
 const pro16_17Geometry = {
   aspect: 450.0 / 920.0,
   screenRect: {
-    x: 24.0 / 450.0,
-    y: 23.0 / 920.0,
-    width: 402.0 / 450.0,
-    height: 874.0 / 920.0,
+    x: 25.0 / 450.0,
+    y: 24.0 / 920.0,
+    width: 400.0 / 450.0,
+    height: 872.0 / 920.0,
   },
-  cornerRadius: 60.0 / 450.0,
+  cornerRadius: 48.0 / 450.0,
 };
 
 const pro15Geometry = {
   aspect: 473.0 / 932.0,
   screenRect: {
-    x: 40.0 / 473.0,
-    y: 40.0 / 932.0,
-    width: 393.0 / 473.0,
-    height: 852.0 / 932.0,
+    x: 41.0 / 473.0,
+    y: 41.0 / 932.0,
+    width: 391.0 / 473.0,
+    height: 850.0 / 932.0,
   },
-  cornerRadius: 60.0 / 473.0,
+  cornerRadius: 52.0 / 473.0,
+};
+
+const ipad11Geometry = {
+  aspect: 1320.0 / 940.0,
+  screenRect: {
+    x: 56.0 / 1320.0,
+    y: 54.0 / 940.0,
+    width: 1208.0 / 1320.0,
+    height: 832.0 / 940.0,
+  },
+  cornerRadius: 24.0 / 1320.0,
+};
+
+const macbookPro14Geometry = {
+  aspect: 1216.0 / 735.0,
+  screenRect: {
+    x: 125.0 / 1216.0,
+    y: 38.0 / 735.0,
+    width: 966.0 / 1216.0,
+    height: 608.0 / 735.0,
+  },
+  cornerRadius: 10.0 / 1216.0,
 };
 
 const voidColor = {
@@ -43,10 +65,10 @@ export const DEVICE_MODELS: DeviceModel[] = [
   },
   {
     id: 'generic-phone',
-    displayName: 'Generic',
+    displayName: 'Generic Phone (Clean Bezel)',
     frameAspectRatio: 9.0 / 19.5,
     screenRectNormalized: { x: 0, y: 0, width: 1, height: 1 },
-    screenCornerRadiusNormalized: 0.06,
+    screenCornerRadiusNormalized: 0.08,
     colors: [voidColor],
     kind: 'generic',
     symbol: 'iphone',
@@ -101,14 +123,9 @@ export const DEVICE_MODELS: DeviceModel[] = [
   {
     id: 'ipad-pro-11',
     displayName: 'iPad Pro 11"',
-    frameAspectRatio: 1320.0 / 940.0,
-    screenRectNormalized: {
-      x: 52.0 / 1320.0,
-      y: 50.0 / 940.0,
-      width: 1216.0 / 1320.0,
-      height: 840.0 / 940.0,
-    },
-    screenCornerRadiusNormalized: 35.0 / 1320.0,
+    frameAspectRatio: ipad11Geometry.aspect,
+    screenRectNormalized: ipad11Geometry.screenRect,
+    screenCornerRadiusNormalized: ipad11Geometry.cornerRadius,
     colors: [
       { id: 'silver', name: 'Silver', imageName: 'iPad Pro 11.png', swatchHex: '#C9CCD0' },
     ],
@@ -117,22 +134,159 @@ export const DEVICE_MODELS: DeviceModel[] = [
     defaultColor: { id: 'silver', name: 'Silver', imageName: 'iPad Pro 11.png', swatchHex: '#C9CCD0' },
   },
   {
+    id: 'ipad-pro-13-m4',
+    displayName: 'iPad Pro 13" (M4)',
+    frameAspectRatio: ipad11Geometry.aspect,
+    screenRectNormalized: ipad11Geometry.screenRect,
+    screenCornerRadiusNormalized: ipad11Geometry.cornerRadius,
+    colors: [
+      { id: 'space-black', name: 'Space Black', imageName: 'iPad Pro 11.png', swatchHex: '#18181B' },
+      { id: 'silver', name: 'Silver', imageName: 'iPad Pro 11.png', swatchHex: '#C9CCD0' },
+    ],
+    kind: 'physical',
+    symbol: 'ipad.landscape',
+    defaultColor: { id: 'space-black', name: 'Space Black', imageName: 'iPad Pro 11.png', swatchHex: '#18181B' },
+  },
+  {
     id: 'macbook-pro-14',
     displayName: 'MacBook Pro 14"',
-    frameAspectRatio: 1216.0 / 735.0,
-    screenRectNormalized: {
-      x: 122.0 / 1216.0,
-      y: 15.0 / 735.0,
-      width: 972.0 / 1216.0,
-      height: 634.0 / 735.0,
-    },
-    screenCornerRadiusNormalized: 10.0 / 1216.0,
+    frameAspectRatio: macbookPro14Geometry.aspect,
+    screenRectNormalized: macbookPro14Geometry.screenRect,
+    screenCornerRadiusNormalized: macbookPro14Geometry.cornerRadius,
     colors: [
+      { id: 'space-black', name: 'Space Black', imageName: 'MacBook Pro 14.png', swatchHex: '#1F242D' },
       { id: 'silver', name: 'Silver', imageName: 'MacBook Pro 14.png', swatchHex: '#C9CCD0' },
     ],
     kind: 'physical',
     symbol: 'laptopcomputer',
-    defaultColor: { id: 'silver', name: 'Silver', imageName: 'MacBook Pro 14.png', swatchHex: '#C9CCD0' },
+    defaultColor: { id: 'space-black', name: 'Space Black', imageName: 'MacBook Pro 14.png', swatchHex: '#1F242D' },
+  },
+  {
+    id: 'macbook-air-15',
+    displayName: 'MacBook Air 15"',
+    frameAspectRatio: macbookPro14Geometry.aspect,
+    screenRectNormalized: macbookPro14Geometry.screenRect,
+    screenCornerRadiusNormalized: macbookPro14Geometry.cornerRadius,
+    colors: [
+      { id: 'midnight', name: 'Midnight Blue', imageName: 'MacBook Pro 14.png', swatchHex: '#1E293B' },
+      { id: 'starlight', name: 'Starlight', imageName: 'MacBook Pro 14.png', swatchHex: '#F1E9DB' },
+      { id: 'space-gray', name: 'Space Gray', imageName: 'MacBook Pro 14.png', swatchHex: '#475569' },
+      { id: 'silver', name: 'Silver', imageName: 'MacBook Pro 14.png', swatchHex: '#C9CCD0' },
+    ],
+    kind: 'physical',
+    symbol: 'laptopcomputer',
+    defaultColor: { id: 'midnight', name: 'Midnight Blue', imageName: 'MacBook Pro 14.png', swatchHex: '#1E293B' },
+  },
+  {
+    id: 'browser-window',
+    displayName: 'Browser Window (macOS Safari / Arc)',
+    frameAspectRatio: 16.0 / 10.0,
+    screenRectNormalized: {
+      x: 0,
+      y: 44.0 / 600.0,
+      width: 1.0,
+      height: (600.0 - 44.0) / 600.0,
+    },
+    screenCornerRadiusNormalized: 14.0 / 960.0,
+    colors: [
+      { id: 'dark', name: 'Dark Frosted', imageName: '', swatchHex: '#18181B' },
+      { id: 'light', name: 'Clean Light', imageName: '', swatchHex: '#F4F4F5' },
+      { id: 'translucent', name: 'Glass Acrylic', imageName: '', swatchHex: '#27272A' },
+    ],
+    kind: 'browser',
+    symbol: 'globe',
+    defaultColor: { id: 'dark', name: 'Dark Frosted', imageName: '', swatchHex: '#18181B' },
+    desktopConfig: {
+      title: 'Maya Studio Demo',
+      url: 'https://maya.studio/demo',
+      theme: 'dark',
+      trafficLights: 'macos',
+      showUrlBar: true,
+    },
+  },
+  {
+    id: 'terminal-window',
+    displayName: 'Hacker Terminal (Ghostty / zsh)',
+    frameAspectRatio: 16.0 / 10.0,
+    screenRectNormalized: {
+      x: 0,
+      y: 40.0 / 600.0,
+      width: 1.0,
+      height: (600.0 - 40.0) / 600.0,
+    },
+    screenCornerRadiusNormalized: 14.0 / 960.0,
+    colors: [
+      { id: 'cyber-dark', name: 'Cyber Slate', imageName: '', swatchHex: '#0B0F19' },
+      { id: 'matrix-green', name: 'Matrix Emerald', imageName: '', swatchHex: '#062E1C' },
+    ],
+    kind: 'terminal',
+    symbol: 'terminal',
+    defaultColor: { id: 'cyber-dark', name: 'Cyber Slate', imageName: '', swatchHex: '#0B0F19' },
+    desktopConfig: {
+      title: 'maya-linux — git:(main) — 80x24',
+      theme: 'dark',
+      trafficLights: 'macos',
+      showUrlBar: false,
+    },
+  },
+  {
+    id: 'studio-display-27',
+    displayName: 'Apple Studio Display 27"',
+    frameAspectRatio: 16.0 / 11.2,
+    screenRectNormalized: {
+      x: 0.032,
+      y: 0.032,
+      width: 0.936,
+      height: 0.772,
+    },
+    screenCornerRadiusNormalized: 0.008,
+    colors: [
+      { id: 'silver', name: 'Silver Aluminum', imageName: '', swatchHex: '#E2E8F0' },
+      { id: 'space-black', name: 'Space Black', imageName: '', swatchHex: '#1E242D' },
+    ],
+    kind: 'desktop',
+    symbol: 'display',
+    defaultColor: { id: 'silver', name: 'Silver Aluminum', imageName: '', swatchHex: '#E2E8F0' },
+  },
+  {
+    id: 'pixel-9-pro',
+    displayName: 'Google Pixel 9 Pro',
+    frameAspectRatio: 440.0 / 920.0,
+    screenRectNormalized: {
+      x: 18.0 / 440.0,
+      y: 18.0 / 920.0,
+      width: 404.0 / 440.0,
+      height: 884.0 / 920.0,
+    },
+    screenCornerRadiusNormalized: 52.0 / 440.0,
+    colors: [
+      { id: 'obsidian', name: 'Obsidian Black', imageName: '', swatchHex: '#18181B' },
+      { id: 'porcelain', name: 'Porcelain White', imageName: '', swatchHex: '#F4F4F5' },
+      { id: 'hazel', name: 'Hazel Sage', imageName: '', swatchHex: '#71717A' },
+      { id: 'rose-quartz', name: 'Rose Quartz', imageName: '', swatchHex: '#F43F5E' },
+    ],
+    kind: 'generic',
+    symbol: 'phone',
+    defaultColor: { id: 'obsidian', name: 'Obsidian Black', imageName: '', swatchHex: '#18181B' },
+  },
+  {
+    id: 'apple-watch-ultra',
+    displayName: 'Apple Watch Ultra 2 (49mm)',
+    frameAspectRatio: 1.0,
+    screenRectNormalized: {
+      x: 0.13,
+      y: 0.13,
+      width: 0.74,
+      height: 0.74,
+    },
+    screenCornerRadiusNormalized: 0.20,
+    colors: [
+      { id: 'titanium', name: 'Natural Titanium', imageName: '', swatchHex: '#D4D4D8' },
+      { id: 'black-titanium', name: 'Black Titanium', imageName: '', swatchHex: '#18181B' },
+    ],
+    kind: 'watch',
+    symbol: 'applewatch',
+    defaultColor: { id: 'titanium', name: 'Natural Titanium', imageName: '', swatchHex: '#D4D4D8' },
   },
 ];
 
@@ -148,6 +302,7 @@ export function getDeviceFrame(modelId: string, colorId?: string): DeviceFrame {
     screenRectNormalized: model.screenRectNormalized,
     screenCornerRadiusNormalized: model.screenCornerRadiusNormalized,
     kind: model.kind,
+    desktopConfig: model.desktopConfig,
   };
 }
 

@@ -6,11 +6,15 @@ import {
   Sliders,
   Palette,
   Compass,
-  Sparkles
+  Sparkles,
+  Shield,
+  MousePointer2,
+  Timer
 } from 'lucide-react';
 import { ProjectState } from '../../types/project';
 import { DEVICE_MODELS, CANVAS_ASPECTS, GRADIENT_PRESETS, SOLID_PRESETS } from '../../models/devices';
-import { CanvasAspectRatioType } from '../../types/models';
+import { CanvasAspectRatioType, ProgressBarStyle, ProgressBarPosition } from '../../types/models';
+import { PROGRESS_BAR_PRESETS, DEFAULT_PROGRESS_BAR_CONFIG } from '../../services/progressBarService';
 
 interface SettingsSidebarProps {
   project: ProjectState;
@@ -146,6 +150,38 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
             </div>
           </div>
         )}
+        {/* Browser / Terminal Custom Frame Settings */}
+        {(currentModel.kind === 'browser' || currentModel.kind === 'terminal') && (
+          <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Window Title</span>
+              <input
+                type="text"
+                value={project.desktopFrame?.title || currentModel.desktopConfig?.title || ''}
+                onChange={(e) => onChange({
+                  desktopFrame: { ...project.desktopFrame, title: e.target.value }
+                })}
+                placeholder="e.g. Maya Studio, Terminal"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-dark-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            {currentModel.kind === 'browser' && (
+              <div className="space-y-1">
+                <span className="text-slate-400 text-[11px]">Address Bar URL</span>
+                <input
+                  type="text"
+                  value={project.desktopFrame?.url || currentModel.desktopConfig?.url || ''}
+                  onChange={(e) => onChange({
+                    desktopFrame: { ...project.desktopFrame, url: e.target.value }
+                  })}
+                  placeholder="https://maya.studio"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-dark-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono text-[11px]"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* 3. 3D Perspective & Gyro Tilt */}
@@ -153,7 +189,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
             <Compass className="w-3.5 h-3.5 text-brand-400" />
-            <span>3D Tilt & Angle</span>
+            <span>3D Studio Tilt & Depth</span>
           </div>
           <button
             onClick={() => onChange({
@@ -172,30 +208,38 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
         {project.transform3D.enabled && (
           <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80 animate-in fade-in">
             {/* Quick 3D Presets */}
-            <div className="grid grid-cols-3 gap-1 pb-1 border-b border-slate-800/60">
+            <div className="grid grid-cols-2 gap-1.5 pb-1 border-b border-slate-800/60">
               <button
                 onClick={() => onChange({
-                  transform3D: { ...project.transform3D, rotateX: 12, rotateY: -18, rotateZ: 4 }
+                  transform3D: { ...project.transform3D, rotateX: 14, rotateY: -20, rotateZ: 3, depthExtrusion: 16, specularGlare: true }
                 })}
-                className="py-1 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
+                className="py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
               >
                 Isometric Left
               </button>
               <button
                 onClick={() => onChange({
-                  transform3D: { ...project.transform3D, rotateX: 12, rotateY: 18, rotateZ: -4 }
+                  transform3D: { ...project.transform3D, rotateX: 14, rotateY: 20, rotateZ: -3, depthExtrusion: 16, specularGlare: true }
                 })}
-                className="py-1 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
+                className="py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
               >
                 Isometric Right
               </button>
               <button
                 onClick={() => onChange({
-                  transform3D: { ...project.transform3D, rotateX: 0, rotateY: 0, rotateZ: 0 }
+                  transform3D: { ...project.transform3D, rotateX: 18, rotateY: 0, rotateZ: 0, depthExtrusion: 18, specularGlare: true }
                 })}
-                className="py-1 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
+                className="py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
               >
-                Flat / Reset
+                Hero Pitch
+              </button>
+              <button
+                onClick={() => onChange({
+                  transform3D: { ...project.transform3D, rotateX: 0, rotateY: 0, rotateZ: 0, depthExtrusion: 0, specularGlare: false }
+                })}
+                className="py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-slate-300 font-medium"
+              >
+                Flat Focus
               </button>
             </div>
 
@@ -237,6 +281,38 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
               />
             </div>
 
+            {/* 3D Chassis Thickness Depth */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>3D Chassis Extrusion</span>
+                <span className="font-mono text-slate-300">{project.transform3D.depthExtrusion || 14}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                step="2"
+                value={project.transform3D.depthExtrusion || 14}
+                onChange={(e) => onChange({
+                  transform3D: { ...project.transform3D, depthExtrusion: parseInt(e.target.value) }
+                })}
+                className="w-full accent-brand-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Specular Glass Sheen */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+              <span className="text-slate-400 text-[11px]">Glass Specular Reflection</span>
+              <input
+                type="checkbox"
+                checked={project.transform3D.specularGlare !== false}
+                onChange={(e) => onChange({
+                  transform3D: { ...project.transform3D, specularGlare: e.target.checked }
+                })}
+                className="accent-brand-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
             {/* Cinematic Auto Drift */}
             <div className="flex items-center justify-between pt-1">
               <span className="text-slate-400 text-[11px]">Cinematic Parallax Drift</span>
@@ -261,11 +337,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
         </div>
 
         {/* Mode Tabs */}
-        <div className="grid grid-cols-4 gap-1 bg-dark-950/80 p-1 rounded-xl border border-slate-800/80">
-          {(['gradient', 'solid', 'videoBlur', 'none'] as const).map((mode) => {
+        <div className="grid grid-cols-5 gap-1 bg-dark-950/80 p-1 rounded-xl border border-slate-800/80">
+          {(['gradient', 'meshGradient', 'solid', 'videoBlur', 'none'] as const).map((mode) => {
             const isSelected = project.background.type === mode;
             const labels: Record<string, string> = {
-              gradient: 'Gradient',
+              gradient: 'Grad',
+              meshGradient: 'Aurora',
               solid: 'Solid',
               videoBlur: 'Blur',
               none: 'Alpha',
@@ -276,6 +353,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
                 onClick={() => {
                   if (mode === 'gradient') {
                     onChange({ background: { type: 'gradient', gradient: GRADIENT_PRESETS[0] } });
+                  } else if (mode === 'meshGradient') {
+                    onChange({ background: { type: 'meshGradient' as any, theme: 'aurora' } as any });
                   } else if (mode === 'solid') {
                     onChange({ background: { type: 'solid', hex: SOLID_PRESETS[0] } });
                   } else if (mode === 'videoBlur') {
@@ -284,7 +363,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
                     onChange({ background: { type: 'none' } });
                   }
                 }}
-                className={`py-1.5 rounded-lg text-center font-medium transition ${
+                className={`py-1.5 rounded-lg text-center font-medium transition text-[11px] ${
                   isSelected
                     ? 'bg-brand-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
@@ -295,6 +374,35 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
             );
           })}
         </div>
+
+        {/* Animated Mesh Gradient Presets */}
+        {(project.background.type as any) === 'meshGradient' && (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            {[
+              { id: 'aurora', name: 'Aurora Borealis', colors: ['#10B981', '#6366F1'] },
+              { id: 'cyberpunk', name: 'Cyberpunk Neon', colors: ['#F43F5E', '#A855F7'] },
+              { id: 'sunset', name: 'Sunset Glow', colors: ['#F97316', '#EC4899'] },
+              { id: 'deepOcean', name: 'Deep Ocean', colors: ['#0284C7', '#4F46E5'] },
+            ].map((theme) => {
+              const isSelected = (project.background as any).theme === theme.id || (!((project.background as any).theme) && theme.id === 'aurora');
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => onChange({ background: { type: 'meshGradient' as any, theme: theme.id } as any })}
+                  className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                    isSelected ? 'border-brand-400 ring-2 ring-brand-500/40 bg-brand-500/10' : 'border-slate-800 bg-dark-950 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="text-[11px] font-medium text-white">{theme.name}</span>
+                  <div 
+                    className="w-4 h-4 rounded-full border border-slate-700 shadow-sm animate-pulse"
+                    style={{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Gradient Presets */}
         {project.background.type === 'gradient' && (
@@ -336,9 +444,460 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
             })}
           </div>
         )}
+
+        {/* Studio Background Pattern Controls */}
+        <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-slate-300">Studio Texture Pattern</span>
+            <input
+              type="checkbox"
+              checked={project.background.pattern?.enabled || false}
+              onChange={(e) => onChange({
+                background: {
+                  ...project.background,
+                  pattern: {
+                    enabled: e.target.checked,
+                    type: project.background.pattern?.type || 'dots',
+                    opacity: project.background.pattern?.opacity ?? 0.25,
+                    colorHex: project.background.pattern?.colorHex || '#FFFFFF',
+                    scale: project.background.pattern?.scale || 32,
+                  }
+                }
+              })}
+              className="accent-brand-500 cursor-pointer w-4 h-4 rounded"
+            />
+          </div>
+
+          {project.background.pattern?.enabled && (
+            <div className="space-y-2.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+              <div className="grid grid-cols-5 gap-1">
+                {(['dots', 'grid', 'crosses', 'circuit', 'radialLines'] as const).map((pType) => {
+                  const isSelected = (project.background.pattern?.type || 'dots') === pType;
+                  return (
+                    <button
+                      key={pType}
+                      onClick={() => onChange({
+                        background: {
+                          ...project.background,
+                          pattern: { ...project.background.pattern!, type: pType }
+                        }
+                      })}
+                      className={`py-1 rounded-lg text-[10px] font-medium capitalize transition ${
+                        isSelected ? 'bg-brand-600 text-white' : 'bg-dark-900 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {pType === 'radialLines' ? 'Rays' : pType}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>Pattern Opacity</span>
+                  <span className="font-mono text-slate-200">
+                    {Math.round((project.background.pattern?.opacity ?? 0.25) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="0.8"
+                  step="0.05"
+                  value={project.background.pattern?.opacity ?? 0.25}
+                  onChange={(e) => onChange({
+                    background: {
+                      ...project.background,
+                      pattern: { ...project.background.pattern!, opacity: parseFloat(e.target.value) }
+                    }
+                  })}
+                  className="w-full accent-brand-500 cursor-pointer"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* 5. Canvas Position & Scale */}
+      {/* 5. Viral Video Progress Bar (TikTok / Reels / Shorts) */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <div className="flex items-center space-x-2">
+            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Progress Bar (Shorts / Reels)</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={project.progressBar?.enabled || false}
+            onChange={(e) => onChange({
+              progressBar: {
+                enabled: e.target.checked,
+                style: project.progressBar?.style || 'gradient',
+                position: project.progressBar?.position || 'bottom',
+                height: project.progressBar?.height || 6,
+                colorStart: project.progressBar?.colorStart || '#6466FA',
+                colorEnd: project.progressBar?.colorEnd || '#EC4899',
+                pillCount: project.progressBar?.pillCount || 4,
+              }
+            })}
+            className="accent-cyan-500 cursor-pointer w-4 h-4 rounded"
+          />
+        </div>
+
+        {project.progressBar?.enabled && (
+          <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+            <div className="grid grid-cols-4 gap-1">
+              {(['gradient', 'neonGlow', 'storyPills', 'radialClock'] as const).map((style) => {
+                const isSelected = project.progressBar?.style === style;
+                const labels: Record<string, string> = {
+                  gradient: 'Grad Bar',
+                  neonGlow: 'Neon Glow',
+                  storyPills: 'Story Pills',
+                  radialClock: 'Clock',
+                };
+                return (
+                  <button
+                    key={style}
+                    onClick={() => onChange({
+                      progressBar: { ...project.progressBar!, style }
+                    })}
+                    className={`py-1.5 rounded-lg text-[10px] font-medium transition ${
+                      isSelected ? 'bg-cyan-600 text-white' : 'bg-dark-900 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {labels[style]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between text-slate-400 text-[11px]">
+              <span>Position</span>
+              <div className="flex space-x-1">
+                {(['bottom', 'top'] as const).map((pos) => (
+                  <button
+                    key={pos}
+                    onClick={() => onChange({
+                      progressBar: { ...project.progressBar!, position: pos }
+                    })}
+                    className={`px-2.5 py-0.5 rounded text-[10px] capitalize ${
+                      project.progressBar?.position === pos ? 'bg-cyan-600 text-white' : 'bg-dark-900 text-slate-400'
+                    }`}
+                  >
+                    {pos}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 6. CapCut FX & Color LUTs */}
+      <section className="space-y-3">
+        <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <span>CapCut FX & Color LUTs</span>
+        </div>
+
+        <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+          {/* Color Grade Preset Picker */}
+          <div className="space-y-1.5">
+            <span className="text-slate-400 text-[11px]">Cinematic Color Grade</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { id: 'none', label: 'Original / Neutral', color: '#64748b' },
+                { id: 'oppenheimer70mm', label: 'Oppenheimer 70mm', color: '#f59e0b' },
+                { id: 'duneDesert', label: 'Dune Arrakis', color: '#d97706' },
+                { id: 'bladeRunner', label: 'Blade Runner 2049', color: '#06b6d4' },
+                { id: 'interstellar', label: 'Interstellar Sci-Fi', color: '#818cf8' },
+                { id: 'cyberpunk', label: 'Cyberpunk Neon', color: '#ec4899' },
+                { id: 'warmSunset', label: 'Sunset Gold', color: '#f59e0b' },
+                { id: 'vintageVHS', label: 'Retro VHS Tape', color: '#d97706' },
+                { id: 'noir', label: 'Noir Cinema', color: '#ffffff' },
+                { id: 'studioBoost', label: 'Studio HDR Boost', color: '#38bdf8' },
+                { id: 'matrix', label: 'Matrix Sci-Fi', color: '#10b981' },
+              ].map((lut) => {
+                const isSelected = (project.effects?.colorGrade || 'none') === lut.id;
+                return (
+                  <button
+                    key={lut.id}
+                    onClick={() => onChange({
+                      effects: { ...project.effects, colorGrade: lut.id as any }
+                    })}
+                    className={`px-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium transition flex items-center space-x-2 border ${
+                      isSelected
+                        ? 'bg-rose-500/15 border-rose-500 text-rose-300 shadow-sm'
+                        : 'bg-dark-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span 
+                      className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" 
+                      style={{ backgroundColor: lut.color }}
+                    />
+                    <span className="truncate">{lut.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Vignette */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-slate-400 text-[11px]">
+              <span>Vignette Depth</span>
+              <span className="font-mono text-slate-300">{((project.effects?.vignette || 0) * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={project.effects?.vignette || 0}
+              onChange={(e) => onChange({
+                effects: { ...project.effects, vignette: parseFloat(e.target.value) }
+              })}
+              className="w-full accent-rose-500 cursor-pointer"
+            />
+          </div>
+
+          {/* Camera Shake FX */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-slate-400 text-[11px]">
+              <span>Camera Shake / Jitter</span>
+              <span className="font-mono text-slate-300">{((project.effects?.cameraShake || 0) * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={project.effects?.cameraShake || 0}
+              onChange={(e) => onChange({
+                effects: { ...project.effects, cameraShake: parseFloat(e.target.value) }
+              })}
+              className="w-full accent-rose-500 cursor-pointer"
+            />
+          </div>
+
+          {/* RGB Glitch FX */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-slate-400 text-[11px]">
+              <span>RGB Glitch Distortion</span>
+              <span className="font-mono text-slate-300">{((project.effects?.rgbGlitch || 0) * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={project.effects?.rgbGlitch || 0}
+              onChange={(e) => onChange({
+                effects: { ...project.effects, rgbGlitch: parseFloat(e.target.value) }
+              })}
+              className="w-full accent-rose-500 cursor-pointer"
+            />
+          </div>
+
+          {/* Spotlight FX */}
+          <div className="space-y-2 pt-1 border-t border-slate-800/60">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">Spotlight Focus FX</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.spotlight?.enabled || false}
+                onChange={(e) => onChange({
+                  effects: {
+                    ...project.effects,
+                    spotlight: {
+                      enabled: e.target.checked,
+                      x: project.effects?.spotlight?.x ?? 0.5,
+                      y: project.effects?.spotlight?.y ?? 0.5,
+                      radius: project.effects?.spotlight?.radius ?? 0.35,
+                      opacity: project.effects?.spotlight?.opacity ?? 0.65,
+                    }
+                  }
+                })}
+                className="accent-rose-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+            {project.effects?.spotlight?.enabled && (
+              <div className="space-y-1 pl-2 border-l border-rose-500/30">
+                <div className="flex justify-between text-slate-500 text-[10px]">
+                  <span>Focus Dimming</span>
+                  <span className="font-mono">{((project.effects.spotlight.opacity ?? 0.65) * 100).toFixed(0)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="0.9"
+                  step="0.05"
+                  value={project.effects.spotlight.opacity ?? 0.65}
+                  onChange={(e) => onChange({
+                    effects: {
+                      ...project.effects,
+                      spotlight: {
+                        ...project.effects.spotlight!,
+                        opacity: parseFloat(e.target.value),
+                      }
+                    }
+                  })}
+                  className="w-full accent-rose-500 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Device Frame Neon Glow */}
+          <div className="space-y-2 pt-1 border-t border-slate-800/60">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">Device Frame Neon Glow</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.deviceGlow?.enabled || false}
+                onChange={(e) => onChange({
+                  effects: {
+                    ...project.effects,
+                    deviceGlow: {
+                      enabled: e.target.checked,
+                      colorHex: project.effects?.deviceGlow?.colorHex || '#6466FA',
+                      radius: project.effects?.deviceGlow?.radius || 24,
+                    }
+                  }
+                })}
+                className="accent-brand-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+            {project.effects?.deviceGlow?.enabled && (
+              <div className="flex items-center space-x-2 pl-2 border-l border-brand-500/30">
+                <input
+                  type="color"
+                  value={project.effects.deviceGlow.colorHex || '#6466FA'}
+                  onChange={(e) => onChange({
+                    effects: {
+                      ...project.effects,
+                      deviceGlow: {
+                        ...project.effects.deviceGlow!,
+                        colorHex: e.target.value,
+                      }
+                    }
+                  })}
+                  className="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer"
+                />
+                <span className="font-mono text-xs text-slate-300">{project.effects.deviceGlow.colorHex || '#6466FA'}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Overlays & Guides */}
+          <div className="space-y-2.5 pt-1 border-t border-slate-800/60">
+            {/* Anamorphic Flare */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px]">Anamorphic Lens Flare</span>
+                <input
+                  type="checkbox"
+                  checked={project.effects?.anamorphicFlare?.enabled || false}
+                  onChange={(e) => onChange({
+                    effects: {
+                      ...project.effects,
+                      anamorphicFlare: {
+                        enabled: e.target.checked,
+                        intensity: project.effects?.anamorphicFlare?.intensity ?? 0.6,
+                        colorHex: project.effects?.anamorphicFlare?.colorHex || '#38BDF8',
+                        streakWidth: project.effects?.anamorphicFlare?.streakWidth ?? 0.85,
+                      }
+                    }
+                  })}
+                  className="accent-cyan-500 cursor-pointer w-4 h-4 rounded"
+                />
+              </div>
+            </div>
+
+            {/* Hollywood Widescreen Letterbox */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px]">2.39:1 Cinema Letterbox</span>
+                <input
+                  type="checkbox"
+                  checked={project.effects?.letterbox?.enabled || false}
+                  onChange={(e) => onChange({
+                    effects: {
+                      ...project.effects,
+                      letterbox: {
+                        enabled: e.target.checked,
+                        aspect: '2.39:1',
+                        opacity: 1.0,
+                      }
+                    }
+                  })}
+                  className="accent-rose-500 cursor-pointer w-4 h-4 rounded"
+                />
+              </div>
+            </div>
+
+            {/* 35mm Light Leaks */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[11px]">35mm Film Light Leaks</span>
+                <input
+                  type="checkbox"
+                  checked={project.effects?.lightLeaks?.enabled || false}
+                  onChange={(e) => onChange({
+                    effects: {
+                      ...project.effects,
+                      lightLeaks: {
+                        enabled: e.target.checked,
+                        intensity: project.effects?.lightLeaks?.intensity ?? 0.5,
+                        theme: project.effects?.lightLeaks?.theme || 'kodakWarm',
+                      }
+                    }
+                  })}
+                  className="accent-amber-500 cursor-pointer w-4 h-4 rounded"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">CRT Scanlines Overlay</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.scanlines || false}
+                onChange={(e) => onChange({
+                  effects: { ...project.effects, scanlines: e.target.checked }
+                })}
+                className="accent-rose-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">Rule of Thirds Grid</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.showGrid || false}
+                onChange={(e) => onChange({
+                  effects: { ...project.effects, showGrid: e.target.checked }
+                })}
+                className="accent-brand-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">TikTok / Shorts Safe Zone</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.showSafeZones || false}
+                onChange={(e) => onChange({
+                  effects: { ...project.effects, showSafeZones: e.target.checked }
+                })}
+                className="accent-amber-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Canvas Position & Scale */}
       <section className="space-y-3">
         <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
           <Sliders className="w-3.5 h-3.5 text-brand-400" />
@@ -380,6 +939,493 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
             />
           </div>
         </div>
+      </section>
+
+      {/* 7. Mouse Cursor & Spline Animation */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <div className="flex items-center space-x-2">
+            <MousePointer2 className="w-3.5 h-3.5 text-brand-400" />
+            <span>Mouse Cursor & Spline</span>
+          </div>
+          <button
+            onClick={() => onChange({
+              cursor: {
+                enabled: !(project.cursor?.enabled ?? true),
+                style: project.cursor?.style ?? 'macos',
+                colorHex: project.cursor?.colorHex ?? '#6466FA',
+                size: project.cursor?.size ?? 32,
+                clickRipples: project.cursor?.clickRipples ?? true,
+              }
+            })}
+            className={`w-8 h-4 rounded-full p-0.5 transition ${
+              project.cursor?.enabled !== false ? 'bg-brand-600' : 'bg-slate-800'
+            }`}
+          >
+            <div
+              className={`w-3 h-3 rounded-full bg-white transition transform ${
+                project.cursor?.enabled !== false ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {project.cursor?.enabled !== false && (
+          <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+            {/* Style selector */}
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Style</span>
+              <div className="grid grid-cols-2 gap-1.5 bg-dark-900 p-1 rounded-lg border border-slate-800">
+                {(['macos', 'dot', 'laser', 'glow'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => onChange({
+                      cursor: {
+                        enabled: project.cursor?.enabled ?? true,
+                        style: st,
+                        colorHex: project.cursor?.colorHex ?? '#6466FA',
+                        size: project.cursor?.size ?? 32,
+                        clickRipples: project.cursor?.clickRipples ?? true,
+                      }
+                    })}
+                    className={`py-1 px-1.5 rounded text-[10px] capitalize transition text-center ${
+                      (project.cursor?.style ?? 'macos') === st
+                        ? 'bg-brand-600 text-white font-medium shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {st === 'macos' ? 'macOS' : st === 'dot' ? 'Screen Studio' : st === 'laser' ? 'Laser' : 'Glow'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Size Slider */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Cursor Size</span>
+                <span className="font-mono text-slate-300">{project.cursor?.size ?? 32}px</span>
+              </div>
+              <input
+                type="range"
+                min="16"
+                max="64"
+                step="1"
+                value={project.cursor?.size ?? 32}
+                onChange={(e) => onChange({
+                  cursor: {
+                    enabled: project.cursor?.enabled ?? true,
+                    style: project.cursor?.style ?? 'macos',
+                    colorHex: project.cursor?.colorHex ?? '#6466FA',
+                    size: parseInt(e.target.value, 10),
+                    clickRipples: project.cursor?.clickRipples ?? true,
+                  }
+                })}
+                className="w-full accent-brand-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Click Ripples Toggle */}
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-slate-400 text-[11px]">Click Ripple Rings</span>
+              <input
+                type="checkbox"
+                checked={project.cursor?.clickRipples ?? true}
+                onChange={(e) => onChange({
+                  cursor: {
+                    enabled: project.cursor?.enabled ?? true,
+                    style: project.cursor?.style ?? 'macos',
+                    colorHex: project.cursor?.colorHex ?? '#6466FA',
+                    size: project.cursor?.size ?? 32,
+                    clickRipples: e.target.checked,
+                  }
+                })}
+                className="accent-brand-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 8. Watermark & Branding */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-3.5 h-3.5 text-brand-400" />
+            <span>Watermark & Logo</span>
+          </div>
+          <button
+            onClick={() => onChange({
+              watermark: {
+                ...project.watermark,
+                enabled: !project.watermark?.enabled
+              }
+            })}
+            className={`w-8 h-4 rounded-full p-0.5 transition ${
+              project.watermark?.enabled ? 'bg-brand-600' : 'bg-slate-800'
+            }`}
+          >
+            <div
+              className={`w-3 h-3 rounded-full bg-white transition transform ${
+                project.watermark?.enabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {project.watermark?.enabled && (
+          <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Badge Text</span>
+              <input
+                type="text"
+                value={project.watermark.text || ''}
+                onChange={(e) => onChange({
+                  watermark: { ...project.watermark, text: e.target.value }
+                })}
+                placeholder="e.g. Maya Studio, @YourHandle"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-dark-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Corner Position</span>
+              <div className="grid grid-cols-2 gap-1 bg-dark-900 p-1 rounded-lg border border-slate-800">
+                {(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map((pos) => (
+                  <button
+                    key={pos}
+                    onClick={() => onChange({
+                      watermark: { ...project.watermark, position: pos }
+                    })}
+                    className={`py-1 rounded text-[10px] capitalize transition ${
+                      project.watermark.position === pos
+                        ? 'bg-brand-600 text-white font-medium shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {pos.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Opacity</span>
+                <span className="font-mono text-slate-300">
+                  {Math.round((project.watermark.opacity ?? 0.75) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value={project.watermark.opacity ?? 0.75}
+                onChange={(e) => onChange({
+                  watermark: { ...project.watermark, opacity: parseFloat(e.target.value) }
+                })}
+                className="w-full accent-brand-500 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 9. Viral Video Progress Bar */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <div className="flex items-center space-x-2">
+            <Timer className="w-3.5 h-3.5 text-brand-400" />
+            <span>Progress Bar</span>
+          </div>
+          <button
+            onClick={() => {
+              const current = project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG;
+              onChange({
+                progressBar: {
+                  ...current,
+                  enabled: !current.enabled,
+                },
+              });
+            }}
+            className={`w-8 h-4 rounded-full p-0.5 transition ${
+              project.progressBar?.enabled ? 'bg-brand-600' : 'bg-slate-800'
+            }`}
+          >
+            <div
+              className={`w-3 h-3 rounded-full bg-white transition transform ${
+                project.progressBar?.enabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {project.progressBar?.enabled && (
+          <div className="space-y-3 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+            {/* Presets */}
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Presets</span>
+              <div className="grid grid-cols-3 gap-1 bg-dark-900 p-1 rounded-lg border border-slate-800">
+                {Object.entries(PROGRESS_BAR_PRESETS).slice(0, 6).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    onClick={() => onChange({ progressBar: { ...preset } })}
+                    className="py-1 px-1.5 rounded text-[10px] capitalize text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition truncate text-center"
+                    title={key}
+                  >
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Style Selector */}
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Bar Style</span>
+              <div className="grid grid-cols-2 gap-1 bg-dark-900 p-1 rounded-lg border border-slate-800">
+                {(
+                  [
+                    { id: 'gradient', label: 'Gradient' },
+                    { id: 'neonGlow', label: 'Neon Glow' },
+                    { id: 'storyPills', label: 'Story Pills' },
+                    { id: 'radialClock', label: 'Radial Clock' },
+                  ] as const
+                ).map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          style: s.id as ProgressBarStyle,
+                        },
+                      })
+                    }
+                    className={`py-1 rounded text-[10px] font-medium transition ${
+                      project.progressBar?.style === s.id
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Position Selector */}
+            <div className="space-y-1">
+              <span className="text-slate-400 text-[11px]">Position</span>
+              <div className="grid grid-cols-2 gap-1 bg-dark-900 p-1 rounded-lg border border-slate-800">
+                {(
+                  [
+                    { id: 'bottom', label: 'Bottom' },
+                    { id: 'bottom-thin', label: 'Bottom Thin' },
+                    { id: 'top', label: 'Top' },
+                    { id: 'top-pills', label: 'Top Pills' },
+                  ] as const
+                ).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          position: p.id as ProgressBarPosition,
+                        },
+                      })
+                    }
+                    className={`py-1 rounded text-[10px] capitalize transition ${
+                      project.progressBar?.position === p.id
+                        ? 'bg-brand-600 text-white font-medium shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <span className="text-slate-400 text-[11px]">Start Color</span>
+                <div className="flex items-center space-x-1.5 bg-dark-900 px-2 py-1 rounded-lg border border-slate-800">
+                  <input
+                    type="color"
+                    value={project.progressBar?.colorStart || '#6366F1'}
+                    onChange={(e) =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          colorStart: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-5 h-5 rounded cursor-pointer bg-transparent border-0"
+                  />
+                  <input
+                    type="text"
+                    value={project.progressBar?.colorStart || '#6366F1'}
+                    onChange={(e) =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          colorStart: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full bg-transparent font-mono text-[10px] text-slate-300 focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-slate-400 text-[11px]">End Color</span>
+                <div className="flex items-center space-x-1.5 bg-dark-900 px-2 py-1 rounded-lg border border-slate-800">
+                  <input
+                    type="color"
+                    value={project.progressBar?.colorEnd || '#EC4899'}
+                    onChange={(e) =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          colorEnd: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-5 h-5 rounded cursor-pointer bg-transparent border-0"
+                  />
+                  <input
+                    type="text"
+                    value={project.progressBar?.colorEnd || '#EC4899'}
+                    onChange={(e) =>
+                      onChange({
+                        progressBar: {
+                          ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                          colorEnd: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full bg-transparent font-mono text-[10px] text-slate-300 focus:outline-none uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Height Slider */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Height / Thickness</span>
+                <span className="font-mono text-slate-300">
+                  {project.progressBar?.height ?? 6}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min="2"
+                max="16"
+                step="1"
+                value={project.progressBar?.height ?? 6}
+                onChange={(e) =>
+                  onChange({
+                    progressBar: {
+                      ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                      height: parseInt(e.target.value, 10),
+                    },
+                  })
+                }
+                className="w-full accent-brand-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Story Pills Count Slider */}
+            {project.progressBar?.style === 'storyPills' && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Pill Segments</span>
+                  <span className="font-mono text-slate-300">
+                    {project.progressBar?.pillCount ?? 4}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="2"
+                  max="12"
+                  step="1"
+                  value={project.progressBar?.pillCount ?? 4}
+                  onChange={(e) =>
+                    onChange({
+                      progressBar: {
+                        ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                        pillCount: parseInt(e.target.value, 10),
+                      },
+                    })
+                  }
+                  className="w-full accent-brand-500 cursor-pointer"
+                />
+              </div>
+            )}
+
+            {/* Glow Radius */}
+            {(project.progressBar?.style === 'neonGlow' ||
+              project.progressBar?.style === 'gradient' ||
+              project.progressBar?.style === 'radialClock') && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Glow Intensity</span>
+                  <span className="font-mono text-slate-300">
+                    {project.progressBar?.glowRadius ?? 10}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="32"
+                  step="1"
+                  value={project.progressBar?.glowRadius ?? 10}
+                  onChange={(e) =>
+                    onChange({
+                      progressBar: {
+                        ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                        glowRadius: parseInt(e.target.value, 10),
+                      },
+                    })
+                  }
+                  className="w-full accent-brand-500 cursor-pointer"
+                />
+              </div>
+            )}
+
+            {/* Opacity */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Opacity</span>
+                <span className="font-mono text-slate-300">
+                  {Math.round((project.progressBar?.opacity ?? 1) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value={project.progressBar?.opacity ?? 1}
+                onChange={(e) =>
+                  onChange({
+                    progressBar: {
+                      ...(project.progressBar ?? DEFAULT_PROGRESS_BAR_CONFIG),
+                      opacity: parseFloat(e.target.value),
+                    },
+                  })
+                }
+                className="w-full accent-brand-500 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
       </section>
     </aside>
   );

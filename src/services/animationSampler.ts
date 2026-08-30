@@ -45,13 +45,35 @@ export function sampleAnimation(
 }
 
 function peakState(segment: ZoomSegment): AnimationSample {
-  let dy = 0;
+  const factor = (BASE_HEIGHT_FRACTION * (segment.scale - 1)) / 2;
+  let nx = segment.panX ?? 0;
+  let ny = segment.panY ?? 0;
+
   if (segment.focus === 'top') {
-    dy = (BASE_HEIGHT_FRACTION * (segment.scale - 1)) / 2;
+    nx = 0; ny = -1;
   } else if (segment.focus === 'bottom') {
-    dy = (-BASE_HEIGHT_FRACTION * (segment.scale - 1)) / 2;
+    nx = 0; ny = 1;
+  } else if (segment.focus === 'left') {
+    nx = -1; ny = 0;
+  } else if (segment.focus === 'right') {
+    nx = 1; ny = 0;
+  } else if (segment.focus === 'top-left') {
+    nx = -1; ny = -1;
+  } else if (segment.focus === 'top-right') {
+    nx = 1; ny = -1;
+  } else if (segment.focus === 'bottom-left') {
+    nx = -1; ny = 1;
+  } else if (segment.focus === 'bottom-right') {
+    nx = 1; ny = 1;
+  } else if (segment.focus === 'center') {
+    nx = 0; ny = 0;
   }
-  return { scale: segment.scale, offsetX: 0, offsetY: dy };
+
+  // Multiply by -1 so panning toward top-left shifts canvas content to bring top-left into center
+  const dx = -nx * factor;
+  const dy = -ny * factor;
+
+  return { scale: segment.scale, offsetX: dx, offsetY: dy };
 }
 
 function envelopeProgress(

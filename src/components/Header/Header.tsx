@@ -1,13 +1,39 @@
-import React, { useRef } from 'react';
-import { Download, Sparkles, FolderOpen, Video, Save, FileUp } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { 
+  Download, 
+  Sparkles, 
+  FolderOpen, 
+  Video, 
+  Save, 
+  FileUp, 
+  Layers, 
+  Undo2, 
+  Redo2, 
+  MousePointer, 
+  Tv, 
+  HelpCircle,
+  ChevronDown,
+  Volume2
+} from 'lucide-react';
 import { ProjectState } from '../../types/project';
+import { generateCapCutDraft } from '../../services/capcutExportService';
 
 interface HeaderProps {
   project: ProjectState;
   onOpenFile: () => void;
   onSaveProject: () => void;
   onLoadProject: (projectData: any) => void;
-  onExport: (transparent: boolean) => void;
+  onExport: (transparent: boolean, quality?: '1080p' | '1440p' | '4k', fps?: number) => void;
+  onOpenTemplates?: () => void;
+  onOpenTTS?: () => void;
+  onOpenLowerThirds?: () => void;
+  onOpenCursor?: () => void;
+  onOpenSFX?: () => void;
+  onOpenShortcuts?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,8 +42,19 @@ export const Header: React.FC<HeaderProps> = ({
   onSaveProject,
   onLoadProject,
   onExport,
+  onOpenTemplates,
+  onOpenTTS,
+  onOpenLowerThirds,
+  onOpenCursor,
+  onOpenSFX,
+  onOpenShortcuts,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) => {
   const projectInputRef = useRef<HTMLInputElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const handleProjectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,6 +70,32 @@ export const Header: React.FC<HeaderProps> = ({
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleExportCapCut = async () => {
+    try {
+      const draft = generateCapCutDraft(project);
+      if ((window as any).electronAPI?.exportCapCutDraft) {
+        const res = await (window as any).electronAPI.exportCapCutDraft({
+          contentJson: draft.contentJson,
+          metaJson: draft.metaJson,
+          projectName: draft.projectName,
+        });
+        if (res.success) {
+          alert(`CapCut Draft exported successfully:\n${res.folderPath}\n\nYou can now open it in CapCut or use with capcut-cli / cutcli!`);
+        }
+      } else {
+        const blob = new Blob([draft.contentJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `draft_content.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      alert(`CapCut export error: ${err.message}`);
+    }
   };
 
   return (
@@ -58,16 +121,97 @@ export const Header: React.FC<HeaderProps> = ({
               Studio Pro
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-mono truncate max-w-[240px]">
+          <p className="text-xs text-slate-400 font-mono truncate max-w-[200px]">
             {project.displayName || 'No video selected'}
           </p>
+        </div>
+
+        {/* Undo / Redo */}
+        <div className="flex items-center space-x-1 pl-2 border-l border-slate-800/80">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-dark-900 disabled:opacity-30 disabled:pointer-events-none transition"
+          >
+            <Undo2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-dark-900 disabled:opacity-30 disabled:pointer-events-none transition"
+          >
+            <Redo2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       <div className="flex items-center space-x-2">
+        {/* Templates */}
+        <button
+          onClick={onOpenTemplates}
+          title="Browse 1-Click Pro Studio Templates"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-semibold text-indigo-300 border border-indigo-500/30 transition shadow-sm active:scale-95"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Templates</span>
+        </button>
+
+        {/* AI Voice */}
+        <button
+          onClick={onOpenTTS}
+          title="AI Voiceover & Script-to-Captions Generator"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 border border-amber-500/30 transition shadow-sm active:scale-95"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>AI Voice</span>
+        </button>
+
+        {/* Lower Thirds */}
+        <button
+          onClick={onOpenLowerThirds}
+          title="Broadcast Lower Thirds & Title Card Studio"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 border border-emerald-500/30 transition shadow-sm active:scale-95"
+        >
+          <Tv className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Lower Thirds</span>
+        </button>
+
+        {/* Cursor Studio */}
+        <button
+          onClick={onOpenCursor}
+          title="Screen Studio Mouse Cursor Tracking & Smoothing"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-semibold text-cyan-300 border border-cyan-500/30 transition shadow-sm active:scale-95"
+        >
+          <MousePointer className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Cursor</span>
+        </button>
+
+        {/* SFX Soundboard */}
+        <button
+          onClick={onOpenSFX}
+          title="Pro Soundboard & Audio SFX Library"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-xs font-semibold text-pink-300 border border-pink-500/30 transition shadow-sm active:scale-95"
+        >
+          <Volume2 className="w-3.5 h-3.5 text-pink-400" />
+          <span>SFX</span>
+        </button>
+
+        {/* Keyboard Shortcuts */}
+        <button
+          onClick={onOpenShortcuts}
+          title="Keyboard Shortcuts Cheat Sheet (?)"
+          className="p-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
+        >
+          <HelpCircle className="w-4 h-4" />
+        </button>
+
+        <div className="h-4 w-[1px] bg-slate-800 mx-0.5" />
+
         <button
           onClick={onOpenFile}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-xs font-medium text-slate-200 border border-slate-700/60 transition shadow-sm active:scale-95"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-xs font-medium text-slate-200 border border-slate-700/60 transition shadow-sm active:scale-95"
         >
           <FolderOpen className="w-3.5 h-3.5 text-slate-400" />
           <span>Open Video</span>
@@ -76,41 +220,102 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onSaveProject}
           title="Save project (.mayaproj)"
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
         >
           <Save className="w-3.5 h-3.5 text-brand-400" />
-          <span>Save Project</span>
+          <span>Save</span>
         </button>
 
         <button
           onClick={() => projectInputRef.current?.click()}
           title="Load saved project (.mayaproj)"
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-dark-900 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
         >
           <FileUp className="w-3.5 h-3.5 text-slate-400" />
-          <span>Open Project</span>
+          <span>Load</span>
         </button>
 
-        <div className="h-4 w-[1px] bg-slate-800 mx-1" />
-
-        <button
-          disabled={!project.videoURL || project.isExporting}
-          onClick={() => onExport(false)}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:pointer-events-none text-xs font-medium text-white transition shadow-lg shadow-brand-600/30 active:scale-95"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export MP4</span>
-        </button>
+        <div className="h-4 w-[1px] bg-slate-800 mx-0.5" />
 
         <button
           disabled={!project.videoURL || project.isExporting}
-          onClick={() => onExport(true)}
-          title="Export with transparent background (HEVC/WebM Alpha)"
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 disabled:opacity-40 disabled:pointer-events-none text-xs font-medium text-slate-300 border border-slate-700/60 transition active:scale-95"
+          onClick={handleExportCapCut}
+          title="Export as standard CapCut/JianYing draft folder"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-xs font-medium text-rose-300 border border-rose-500/30 transition shadow-sm active:scale-95"
         >
-          <Video className="w-3.5 h-3.5 text-brand-400" />
-          <span>Export Alpha</span>
+          <Layers className="w-3.5 h-3.5 text-rose-400" />
+          <span>CapCut Draft</span>
         </button>
+
+        {/* 4K/1080p Export Hub */}
+        <div className="relative">
+          <div className="flex items-center rounded-lg bg-brand-600 shadow-lg shadow-brand-600/30">
+            <button
+              disabled={!project.videoURL || project.isExporting}
+              onClick={() => onExport(false, '1080p', 30)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 rounded-l-lg transition active:scale-95 disabled:opacity-40"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export 1080p</span>
+            </button>
+            <button
+              disabled={!project.videoURL || project.isExporting}
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-1.5 py-1.5 border-l border-brand-500/50 hover:bg-brand-500 rounded-r-lg text-white transition"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-52 rounded-xl bg-dark-900 border border-slate-800 shadow-2xl p-1.5 space-y-1 z-50 animate-in fade-in">
+              <button
+                onClick={() => {
+                  setShowExportMenu(false);
+                  onExport(false, '4k', 60);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-medium text-white flex items-center justify-between"
+              >
+                <span>4K Ultra HD (60 FPS)</span>
+                <span className="text-[10px] text-amber-400 font-mono font-bold">4K</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowExportMenu(false);
+                  onExport(false, '1440p', 60);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-medium text-white flex items-center justify-between"
+              >
+                <span>2K QHD (60 FPS)</span>
+                <span className="text-[10px] text-brand-400 font-mono font-bold">2K</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowExportMenu(false);
+                  onExport(false, '1080p', 60);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-medium text-white flex items-center justify-between"
+              >
+                <span>1080p Full HD (60 FPS)</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold">60fps</span>
+              </button>
+              <div className="h-[1px] bg-slate-800 my-1" />
+              <button
+                onClick={() => {
+                  setShowExportMenu(false);
+                  onExport(true, '1080p', 30);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-medium text-slate-300 flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-1.5">
+                  <Video className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Transparent Alpha</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">WebM</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
