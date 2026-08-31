@@ -13,7 +13,9 @@ import {
   WatermarkConfig,
   VideoEffectsConfig,
   SelectedEvent,
-  ProgressBarConfig 
+  ProgressBarConfig,
+  MetaEditsConfig,
+  TransitionItem,
 } from './models';
 
 export interface ProjectState {
@@ -33,6 +35,7 @@ export interface ProjectState {
   shadow: PhoneShadow;
   transform3D: Device3DTransform;
   effects: VideoEffectsConfig;
+  metaEdits?: MetaEditsConfig;
   watermark: WatermarkConfig;
 
   deviceModelID: string;
@@ -63,11 +66,13 @@ export interface ProjectState {
   animations: ZoomSegment[];
   tapEvents: TapEvent[];
   speedSegments: SpeedSegment[];
+  transitions: TransitionItem[];
   overlays: TextOverlay[];
   subtitles: SubtitleItem[];
   stickers: StickerItem[];
   audioTracks: AudioTrack[];
   selectedEvent: SelectedEvent;
+  snapToBeat?: boolean;
 
   trimStartTime: number;
   trimEndTime: number;

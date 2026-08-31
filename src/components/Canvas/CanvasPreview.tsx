@@ -23,6 +23,15 @@ import {
   drawLightLeaks, 
   computeHandheldDrift 
 } from '../../services/cinematicEffectsService';
+import {
+  drawMetaScribbleEffect,
+  drawMetaOutlineEffect,
+  drawMetaGlitterEffect,
+  drawMetaSelectiveBlur,
+  drawMetaFlashStrobe,
+} from '../../services/metaEditsEffectsService';
+import { drawTransitionEffect } from '../../services/transitionsService';
+import { drawVHSTapeGlitch, drawVintage8mmFilm, drawPrismRefraction } from '../../services/vintageVFXService';
 import { Upload } from 'lucide-react';
 
 interface CanvasPreviewProps {
@@ -298,6 +307,43 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({
         // Draw Hollywood 2.39:1 Widescreen Letterbox Matte
         if (project.effects?.letterbox?.enabled) {
           drawCinematicLetterbox(ctx, width, height, project.effects.letterbox);
+        }
+
+        // Draw Meta Edits AI Effects Suite (Scribble, Outline, Glitter, Privacy Blur, Flash Strobe)
+        if (project.metaEdits) {
+          const targetBounds = { x: screenX, y: screenY, width: screenW, height: screenH, radius: cornerRadius };
+
+          if (project.metaEdits.scribble?.enabled) {
+            drawMetaScribbleEffect(ctx, width, height, sourceTime, project.metaEdits.scribble, targetBounds);
+          }
+          if (project.metaEdits.outline?.enabled) {
+            drawMetaOutlineEffect(ctx, width, height, sourceTime, project.metaEdits.outline, targetBounds);
+          }
+          if (project.metaEdits.glitter?.enabled) {
+            drawMetaGlitterEffect(ctx, width, height, sourceTime, project.metaEdits.glitter);
+          }
+          if (project.metaEdits.selectiveBlur?.enabled) {
+            drawMetaSelectiveBlur(ctx, width, height, project.metaEdits.selectiveBlur);
+          }
+          if (project.metaEdits.flashStrobe?.enabled) {
+            drawMetaFlashStrobe(ctx, width, height, sourceTime, project.metaEdits.flashStrobe);
+          }
+        }
+
+        // Draw Vintage & Retro Glitch Shaders
+        if (project.effects?.vhsGlitch?.enabled) {
+          drawVHSTapeGlitch(ctx, width, height, sourceTime, project.effects.vhsGlitch.intensity, project.effects.vhsGlitch.showOSD);
+        }
+        if (project.effects?.vintage8mm?.enabled) {
+          drawVintage8mmFilm(ctx, width, height, sourceTime, project.effects.vintage8mm.intensity, project.effects.vintage8mm.dustFlicker);
+        }
+        if (project.effects?.prismRefraction?.enabled) {
+          drawPrismRefraction(ctx, width, height, sourceTime, project.effects.prismRefraction.intensity);
+        }
+
+        // Draw Cinema Transitions
+        if (project.transitions && project.transitions.length > 0) {
+          drawTransitionEffect(ctx, width, height, sourceTime, project.transitions);
         }
 
         // Draw Viral Video Progress Bar (Reels / Shorts / TikTok)

@@ -141,6 +141,28 @@ export interface AudioTrack {
   duckingEnabled?: boolean;
   duckingAmount?: number; // 0..1 (default 0.3)
   isMuted?: boolean;
+  bpm?: number;
+  beatTimestamps?: number[];
+  waveformData?: number[];
+}
+
+export type TransitionType = 
+  | 'whipPan' 
+  | 'crashZoom' 
+  | 'lightLeakFlash' 
+  | 'rgbGlitch' 
+  | 'filmBurn' 
+  | 'vortexSwirl' 
+  | 'directionalPush'
+  | 'none';
+
+export interface TransitionItem {
+  id: string;
+  type: TransitionType;
+  startTime: number; // in seconds
+  duration: number; // typically 0.3..0.8s
+  direction?: 'left' | 'right' | 'up' | 'down';
+  intensity?: number; // 0..1
 }
 
 export type ZoomFocus = 
@@ -253,8 +275,61 @@ export interface VideoEffectsConfig {
     colorHex: string;
     radius: number; // 0..40
   };
+  vhsGlitch?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    showOSD?: boolean;
+  };
+  vintage8mm?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    dustFlicker?: boolean;
+  };
+  prismRefraction?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+  };
   showSafeZones?: boolean;
   showGrid?: boolean;
+}
+
+export interface MetaEditsConfig {
+  scribble?: {
+    enabled: boolean;
+    style: 'neon' | 'chalk' | 'electric' | 'rainbow';
+    speed: number; // 0.5..3.0
+    intensity: number; // 0..1
+    colorHex: string;
+    mode?: 'around-frame' | 'taps' | 'screen-border';
+  };
+  outline?: {
+    enabled: boolean;
+    colorHex: string;
+    width: number; // 2..12
+    pulseSpeed: number; // 0.5..4.0
+    glowIntensity: number; // 0..1
+    style: 'solid' | 'dashed' | 'flowing';
+  };
+  glitter?: {
+    enabled: boolean;
+    starCount: number; // 10..80
+    colorTheme: 'diamond' | 'gold' | 'neonPink' | 'cosmic';
+    speed: number; // 0.5..3.0
+  };
+  selectiveBlur?: {
+    enabled: boolean;
+    type: 'gaussian' | 'pixelate';
+    x: number; // normalized 0..1
+    y: number; // normalized 0..1
+    width: number; // normalized 0.05..0.8
+    height: number; // normalized 0.05..0.5
+    pixelSize?: number;
+  };
+  flashStrobe?: {
+    enabled: boolean;
+    intensity: number; // 0..1
+    triggerEverySec?: number; // 1..10
+  };
 }
 
 export type SubtitleStyle = 'hormozi' | 'neonGlow' | 'glassCard' | 'minimal' | 'karaoke';
@@ -324,6 +399,7 @@ export type SelectedEvent =
   | { type: 'zoom'; id: string }
   | { type: 'tap'; id: string }
   | { type: 'speed'; id: string }
+  | { type: 'transition'; id: string }
   | { type: 'overlay'; id: string }
   | { type: 'subtitle'; id: string }
   | { type: 'sticker'; id: string }

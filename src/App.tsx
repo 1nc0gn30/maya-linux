@@ -12,11 +12,13 @@ import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsMod
 import { CursorModal } from './components/Modals/CursorModal';
 import { LowerThirdsModal } from './components/Modals/LowerThirdsModal';
 import { SFXLibraryModal } from './components/Modals/SFXLibraryModal';
+import { MetaEditsModal } from './components/Modals/MetaEditsModal';
+import { TransitionsModal } from './components/Modals/TransitionsModal';
 import { GRADIENT_PRESETS } from './models/devices';
 import { SpeedTimeline } from './models/speedTimeline';
 import { exportVideo } from './services/exportService';
 import { computeAudioDucking, computeAudioFade } from './services/audioService';
-import { AudioTrack, StickerItem, SubtitleItem, TextOverlay } from './types/models';
+import { AudioTrack, StickerItem, SubtitleItem, TextOverlay, MetaEditsConfig, TransitionItem } from './types/models';
 
 const initialProject: ProjectState = {
   videoURL: null,
@@ -104,6 +106,7 @@ const initialProject: ProjectState = {
   animations: [],
   tapEvents: [],
   speedSegments: [],
+  transitions: [],
   overlays: [],
   subtitles: [],
   stickers: [],
@@ -128,6 +131,8 @@ export const App: React.FC = () => {
   const [isCursorModalOpen, setIsCursorModalOpen] = useState(false);
   const [isLowerThirdsModalOpen, setIsLowerThirdsModalOpen] = useState(false);
   const [isSFXModalOpen, setIsSFXModalOpen] = useState(false);
+  const [isMetaEditsModalOpen, setIsMetaEditsModalOpen] = useState(false);
+  const [isTransitionsModalOpen, setIsTransitionsModalOpen] = useState(false);
 
   const historyRef = useRef<ProjectState[]>([]);
   const futureRef = useRef<ProjectState[]>([]);
@@ -642,6 +647,27 @@ export const App: React.FC = () => {
         }}
       />
 
+      <MetaEditsModal
+        isOpen={isMetaEditsModalOpen}
+        onClose={() => setIsMetaEditsModalOpen(false)}
+        project={project}
+        onUpdateMetaEdits={(metaEdits: MetaEditsConfig) => {
+          updateProject({ metaEdits }, true);
+        }}
+      />
+
+      <TransitionsModal
+        isOpen={isTransitionsModalOpen}
+        onClose={() => setIsTransitionsModalOpen(false)}
+        project={project}
+        onAddTransition={(transition: TransitionItem) => {
+          updateProject({
+            transitions: [...(project.transitions || []), transition],
+            selectedEvent: { type: 'transition', id: transition.id },
+          }, true);
+        }}
+      />
+
       {/* Main App Layout */}
       <Header
         project={project}
@@ -654,6 +680,8 @@ export const App: React.FC = () => {
         onOpenLowerThirds={() => setIsLowerThirdsModalOpen(true)}
         onOpenCursor={() => setIsCursorModalOpen(true)}
         onOpenSFX={() => setIsSFXModalOpen(true)}
+        onOpenMetaEdits={() => setIsMetaEditsModalOpen(true)}
+        onOpenTransitions={() => setIsTransitionsModalOpen(true)}
         onOpenShortcuts={() => setIsShortcutsModalOpen(true)}
         onUndo={undo}
         onRedo={redo}
@@ -692,6 +720,7 @@ export const App: React.FC = () => {
         onOpenStickerPicker={() => setIsStickerModalOpen(true)}
         onOpenLowerThirds={() => setIsLowerThirdsModalOpen(true)}
         onOpenSFXLibrary={() => setIsSFXModalOpen(true)}
+        onOpenTransitions={() => setIsTransitionsModalOpen(true)}
       />
     </div>
   );

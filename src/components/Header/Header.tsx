@@ -13,7 +13,8 @@ import {
   Tv, 
   HelpCircle,
   ChevronDown,
-  Volume2
+  Volume2,
+  RotateCw
 } from 'lucide-react';
 import { ProjectState } from '../../types/project';
 import { generateCapCutDraft } from '../../services/capcutExportService';
@@ -29,6 +30,8 @@ interface HeaderProps {
   onOpenLowerThirds?: () => void;
   onOpenCursor?: () => void;
   onOpenSFX?: () => void;
+  onOpenMetaEdits?: () => void;
+  onOpenTransitions?: () => void;
   onOpenShortcuts?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -47,6 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLowerThirds,
   onOpenCursor,
   onOpenSFX,
+  onOpenMetaEdits,
+  onOpenTransitions,
   onOpenShortcuts,
   onUndo,
   onRedo,
@@ -196,6 +201,26 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Volume2 className="w-3.5 h-3.5 text-pink-400" />
           <span>SFX</span>
+        </button>
+
+        {/* Edits by Meta AI Effects */}
+        <button
+          onClick={onOpenMetaEdits}
+          title="Edits by Meta AI Effects (Scribble, Outline, Glitter, Privacy Blur)"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 border border-rose-500/30 transition shadow-sm active:scale-95"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <span>Meta FX</span>
+        </button>
+
+        {/* Cinema Transitions Studio */}
+        <button
+          onClick={onOpenTransitions}
+          title="Cinema Transition Effects (Whip Pan, Crash Zoom, Light Leak, Glitch, Film Burn)"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-xs font-semibold text-purple-300 border border-purple-500/30 transition shadow-sm active:scale-95"
+        >
+          <RotateCw className="w-3.5 h-3.5 text-purple-400" />
+          <span>Transitions</span>
         </button>
 
         {/* Keyboard Shortcuts */}

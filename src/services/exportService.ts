@@ -22,6 +22,15 @@ import {
   drawAnamorphicFlare, 
   drawLightLeaks 
 } from './cinematicEffectsService';
+import {
+  drawMetaScribbleEffect,
+  drawMetaOutlineEffect,
+  drawMetaGlitterEffect,
+  drawMetaSelectiveBlur,
+  drawMetaFlashStrobe,
+} from './metaEditsEffectsService';
+import { drawTransitionEffect } from './transitionsService';
+import { drawVHSTapeGlitch, drawVintage8mmFilm, drawPrismRefraction } from './vintageVFXService';
 
 export interface ExportOptions {
   transparent: boolean;
@@ -472,7 +481,44 @@ function renderCompositeFrame(rc: FrameRenderContext) {
     drawCinematicLetterbox(ctx, canvasWidth, canvasHeight, project.effects.letterbox);
   }
 
-  // 15. Draw Viral Video Progress Bar (Reels / Shorts / TikTok)
+  // 15. Draw Meta Edits AI Effects Suite (Scribble, Outline, Glitter, Privacy Blur, Flash Strobe)
+  if (project.metaEdits) {
+    const targetBounds = { x: screenX, y: screenY, width: screenW, height: screenH, radius: cornerRadius };
+
+    if (project.metaEdits.scribble?.enabled) {
+      drawMetaScribbleEffect(ctx, canvasWidth, canvasHeight, sourceTime, project.metaEdits.scribble, targetBounds);
+    }
+    if (project.metaEdits.outline?.enabled) {
+      drawMetaOutlineEffect(ctx, canvasWidth, canvasHeight, sourceTime, project.metaEdits.outline, targetBounds);
+    }
+    if (project.metaEdits.glitter?.enabled) {
+      drawMetaGlitterEffect(ctx, canvasWidth, canvasHeight, sourceTime, project.metaEdits.glitter);
+    }
+    if (project.metaEdits.selectiveBlur?.enabled) {
+      drawMetaSelectiveBlur(ctx, canvasWidth, canvasHeight, project.metaEdits.selectiveBlur);
+    }
+    if (project.metaEdits.flashStrobe?.enabled) {
+      drawMetaFlashStrobe(ctx, canvasWidth, canvasHeight, sourceTime, project.metaEdits.flashStrobe);
+    }
+  }
+
+  // 16. Draw Vintage & Retro Glitch Shaders
+  if (project.effects?.vhsGlitch?.enabled) {
+    drawVHSTapeGlitch(ctx, canvasWidth, canvasHeight, sourceTime, project.effects.vhsGlitch.intensity, project.effects.vhsGlitch.showOSD);
+  }
+  if (project.effects?.vintage8mm?.enabled) {
+    drawVintage8mmFilm(ctx, canvasWidth, canvasHeight, sourceTime, project.effects.vintage8mm.intensity, project.effects.vintage8mm.dustFlicker);
+  }
+  if (project.effects?.prismRefraction?.enabled) {
+    drawPrismRefraction(ctx, canvasWidth, canvasHeight, sourceTime, project.effects.prismRefraction.intensity);
+  }
+
+  // 17. Draw Cinema Transitions
+  if (project.transitions && project.transitions.length > 0) {
+    drawTransitionEffect(ctx, canvasWidth, canvasHeight, sourceTime, project.transitions);
+  }
+
+  // 18. Draw Viral Video Progress Bar (Reels / Shorts / TikTok)
   if (project.progressBar?.enabled) {
     const totalDur = Math.max(1, project.videoDuration || 10);
     const progressRatio = sourceTime / totalDur;

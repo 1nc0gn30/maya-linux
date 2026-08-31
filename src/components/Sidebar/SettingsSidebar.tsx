@@ -9,7 +9,8 @@ import {
   Sparkles,
   Shield,
   MousePointer2,
-  Timer
+  Timer,
+  Wand2
 } from 'lucide-react';
 import { ProjectState } from '../../types/project';
 import { DEVICE_MODELS, CANVAS_ASPECTS, GRADIENT_PRESETS, SOLID_PRESETS } from '../../models/devices';
@@ -870,6 +871,65 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
               />
             </div>
 
+            {/* VHS Tape Glitch */}
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">VHS Tape & VCR Tracking</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.vhsGlitch?.enabled || false}
+                onChange={(e) => onChange({
+                  effects: {
+                    ...project.effects,
+                    vhsGlitch: {
+                      enabled: e.target.checked,
+                      intensity: project.effects?.vhsGlitch?.intensity ?? 0.6,
+                      showOSD: project.effects?.vhsGlitch?.showOSD ?? true,
+                    }
+                  }
+                })}
+                className="accent-emerald-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
+            {/* 8mm Vintage Film */}
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">8mm Vintage Film & Dust</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.vintage8mm?.enabled || false}
+                onChange={(e) => onChange({
+                  effects: {
+                    ...project.effects,
+                    vintage8mm: {
+                      enabled: e.target.checked,
+                      intensity: project.effects?.vintage8mm?.intensity ?? 0.5,
+                      dustFlicker: project.effects?.vintage8mm?.dustFlicker ?? true,
+                    }
+                  }
+                })}
+                className="accent-amber-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
+            {/* Prism Refraction */}
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 text-[11px]">Prism Rainbow Refraction</span>
+              <input
+                type="checkbox"
+                checked={project.effects?.prismRefraction?.enabled || false}
+                onChange={(e) => onChange({
+                  effects: {
+                    ...project.effects,
+                    prismRefraction: {
+                      enabled: e.target.checked,
+                      intensity: project.effects?.prismRefraction?.intensity ?? 0.5,
+                    }
+                  }
+                })}
+                className="accent-cyan-500 cursor-pointer w-4 h-4 rounded"
+              />
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-slate-400 text-[11px]">Rule of Thirds Grid</span>
               <input
@@ -897,7 +957,107 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ project, onCha
         </div>
       </section>
 
-      {/* 6. Canvas Position & Scale */}
+      {/* 6. Edits by Meta AI Effects */}
+      <section className="space-y-3">
+        <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+          <Wand2 className="w-3.5 h-3.5 text-rose-400" />
+          <span>Meta Edits AI Effects</span>
+        </div>
+
+        <div className="space-y-2.5 p-3 rounded-xl bg-dark-950/80 border border-slate-800/80">
+          {/* Scribble Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-slate-300 text-[11px]">Neon Scribble Doodles</span>
+            <input
+              type="checkbox"
+              checked={project.metaEdits?.scribble?.enabled || false}
+              onChange={(e) => onChange({
+                metaEdits: {
+                  ...project.metaEdits,
+                  scribble: {
+                    enabled: e.target.checked,
+                    style: project.metaEdits?.scribble?.style || 'neon',
+                    speed: project.metaEdits?.scribble?.speed ?? 1.5,
+                    intensity: project.metaEdits?.scribble?.intensity ?? 0.8,
+                    colorHex: project.metaEdits?.scribble?.colorHex || '#38BDF8',
+                  }
+                }
+              })}
+              className="accent-cyan-500 cursor-pointer w-4 h-4 rounded"
+            />
+          </div>
+
+          {/* Outline Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-slate-300 text-[11px]">Luminous Silhouette Outline</span>
+            <input
+              type="checkbox"
+              checked={project.metaEdits?.outline?.enabled || false}
+              onChange={(e) => onChange({
+                metaEdits: {
+                  ...project.metaEdits,
+                  outline: {
+                    enabled: e.target.checked,
+                    colorHex: project.metaEdits?.outline?.colorHex || '#EC4899',
+                    width: project.metaEdits?.outline?.width || 4,
+                    pulseSpeed: project.metaEdits?.outline?.pulseSpeed || 2.0,
+                    glowIntensity: project.metaEdits?.outline?.glowIntensity ?? 0.9,
+                    style: project.metaEdits?.outline?.style || 'flowing',
+                  }
+                }
+              })}
+              className="accent-rose-500 cursor-pointer w-4 h-4 rounded"
+            />
+          </div>
+
+          {/* Glitter Sparkles Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-slate-300 text-[11px]">Glitter & Diamond Sparkles</span>
+            <input
+              type="checkbox"
+              checked={project.metaEdits?.glitter?.enabled || false}
+              onChange={(e) => onChange({
+                metaEdits: {
+                  ...project.metaEdits,
+                  glitter: {
+                    enabled: e.target.checked,
+                    starCount: project.metaEdits?.glitter?.starCount || 36,
+                    colorTheme: project.metaEdits?.glitter?.colorTheme || 'diamond',
+                    speed: project.metaEdits?.glitter?.speed || 1.0,
+                  }
+                }
+              })}
+              className="accent-amber-500 cursor-pointer w-4 h-4 rounded"
+            />
+          </div>
+
+          {/* Privacy Blur Censor Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-slate-300 text-[11px]">Privacy Blur Censor Box</span>
+            <input
+              type="checkbox"
+              checked={project.metaEdits?.selectiveBlur?.enabled || false}
+              onChange={(e) => onChange({
+                metaEdits: {
+                  ...project.metaEdits,
+                  selectiveBlur: {
+                    enabled: e.target.checked,
+                    type: project.metaEdits?.selectiveBlur?.type || 'pixelate',
+                    x: project.metaEdits?.selectiveBlur?.x ?? 0.5,
+                    y: project.metaEdits?.selectiveBlur?.y ?? 0.82,
+                    width: project.metaEdits?.selectiveBlur?.width ?? 0.45,
+                    height: project.metaEdits?.selectiveBlur?.height ?? 0.12,
+                    pixelSize: project.metaEdits?.selectiveBlur?.pixelSize || 14,
+                  }
+                }
+              })}
+              className="accent-emerald-500 cursor-pointer w-4 h-4 rounded"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Canvas Position & Scale */}
       <section className="space-y-3">
         <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
           <Sliders className="w-3.5 h-3.5 text-brand-400" />

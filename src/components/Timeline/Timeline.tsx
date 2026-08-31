@@ -17,13 +17,17 @@ import {
   Smile, 
   Wand2, 
   ChevronDown,
-  Tv 
+  Tv,
+  Magnet,
+  Zap,
+  RotateCw
 } from 'lucide-react';
 import { ProjectState } from '../../types/project';
 import { SpeedTimeline } from '../../models/speedTimeline';
-import { ZoomSegment, TapEvent, SpeedSegment, TextOverlay, AudioTrack, SubtitleItem, StickerItem } from '../../types/models';
+import { ZoomSegment, TapEvent, SpeedSegment, TextOverlay, AudioTrack, SubtitleItem, StickerItem, TransitionItem } from '../../types/models';
 import { soundManager, AUDIO_SFX_PRESETS } from '../../services/audioService';
 import { generateSmartZoomsFromClicks } from '../../services/autoZoomService';
+import { analyzeAudioForBeats, generateZoomsOnBeats, snapTimeToNearestBeat } from '../../services/beatDetectionService';
 import { AudioImportModal } from './AudioImportModal';
 
 interface TimelineProps {
@@ -37,11 +41,12 @@ interface TimelineProps {
   onOpenStickerPicker?: () => void;
   onOpenLowerThirds?: () => void;
   onOpenSFXLibrary?: () => void;
+  onOpenTransitions?: () => void;
 }
 
 interface DraggableBlockProps {
   id: string;
-  type: 'zoom' | 'tap' | 'overlay' | 'speed' | 'audio' | 'subtitle' | 'sticker';
+  type: 'zoom' | 'tap' | 'overlay' | 'speed' | 'audio' | 'subtitle' | 'sticker' | 'transition';
   timelineStart: number;
   duration: number;
   totalDuration: number;
@@ -56,6 +61,9 @@ interface DraggableBlockProps {
   };
   label: string;
   icon?: React.ReactNode;
+  waveformData?: number[];
+  beatTimestamps?: number[];
+  bpm?: number;
   onSelect: () => void;
   onSeekToStart: () => void;
   onMove: (newTimelineStart: number) => void;
@@ -72,6 +80,9 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   colorClass,
   label,
   icon,
+  waveformData,
+  beatTimestamps,
+  bpm,
   onSelect,
   onSeekToStart,
   onMove,
@@ -143,7 +154,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         e.stopPropagation();
         onSelect();
       }}
-      className={`absolute top-0.5 bottom-0.5 rounded-lg flex items-center select-none group transition-shadow ${
+      className={`absolute top-0.5 bottom-0.5 rounded-lg flex items-center select-none group transition-shadow overflow-hidden ${
         isSelected
           ? `${colorClass.selectedBg} ${colorClass.selectedBorder} shadow-lg ring-2 ring-white/60 z-30`
           : `${colorClass.bg} ${colorClass.border} hover:brightness-110 z-10`
@@ -153,6 +164,32 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         width: `${Math.max(1.8, Math.min(100 - leftPct, widthPct))}%`,
       }}
     >
+      {/* Background Audio Waveform Graph */}
+      {waveformData && waveformData.length > 0 && (
+        <div className="absolute inset-0 flex items-center justify-around px-2 pointer-events-none opacity-30 z-0">
+          {waveformData.slice(0, 60).map((peak, idx) => (
+            <div
+              key={idx}
+              className="w-[2px] bg-white rounded-full"
+              style={{ height: `${Math.max(15, peak * 85)}%` }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Musical Beat Marker Lines */}
+      {beatTimestamps && duration > 0 && beatTimestamps.map((bTime, bIdx) => {
+        if (bTime < timelineStart || bTime > timelineStart + duration) return null;
+        const relPct = ((bTime - timelineStart) / duration) * 100;
+        return (
+          <div
+            key={bIdx}
+            className="absolute top-0 bottom-0 w-[1.5px] bg-amber-300/80 shadow-[0_0_3px_#FDE047] pointer-events-none z-0"
+            style={{ left: `${relPct}%` }}
+          />
+        );
+      })}
+
       {/* Tooltip on drag */}
       {isDragging && dragInfo && (
         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-dark-900 border border-slate-700 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none">
@@ -164,7 +201,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       <div
         onPointerDown={(e) => startDrag(e, 'resize-left')}
         title="Drag to trim start time"
-        className="w-2.5 h-full cursor-ew-resize flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/30 rounded-l transition-opacity"
+        className="w-2.5 h-full cursor-ew-resize flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/30 rounded-l transition-opacity z-10"
       >
         <div className="w-[2px] h-3 bg-white/70 rounded-full" />
       </div>
@@ -173,19 +210,26 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       <div
         onPointerDown={(e) => startDrag(e, 'move')}
         title="Click to select, drag to reposition on timeline"
-        className="flex-1 h-full cursor-grab active:cursor-grabbing flex items-center px-1 overflow-hidden"
+        className="flex-1 h-full cursor-grab active:cursor-grabbing flex items-center px-1 overflow-hidden z-10 justify-between"
       >
-        {icon && <span className="mr-1 shrink-0 opacity-80">{icon}</span>}
-        <span className={`text-[10px] font-semibold truncate ${colorClass.text}`}>
-          {label}
-        </span>
+        <div className="flex items-center space-x-1 truncate">
+          {icon && <span className="mr-1 shrink-0 opacity-80">{icon}</span>}
+          <span className={`text-[10px] font-semibold truncate ${colorClass.text}`}>
+            {label}
+          </span>
+        </div>
+        {bpm && (
+          <span className="text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full shrink-0 ml-1">
+            {bpm} BPM
+          </span>
+        )}
       </div>
 
       {/* Right Resize Handle */}
       <div
         onPointerDown={(e) => startDrag(e, 'resize-right')}
         title="Drag to adjust duration"
-        className="w-2.5 h-full cursor-ew-resize flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/30 rounded-r transition-opacity"
+        className="w-2.5 h-full cursor-ew-resize flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/30 rounded-r transition-opacity z-10"
       >
         <div className="w-[2px] h-3 bg-white/70 rounded-full" />
       </div>
@@ -202,6 +246,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onOpenStickerPicker,
   onOpenLowerThirds,
   onOpenSFXLibrary,
+  onOpenTransitions,
 }) => {
   const tracksRef = useRef<HTMLDivElement>(null);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
@@ -483,7 +528,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   };
 
-  const handleAudioImported = (audioData: { url: string; name: string }) => {
+  const handleAudioImported = async (audioData: { url: string; name: string }) => {
     const newAudio: AudioTrack = {
       id: crypto.randomUUID(),
       url: audioData.url,
@@ -493,9 +538,49 @@ export const Timeline: React.FC<TimelineProps> = ({
       duration: totalDuration,
       isMuted: false,
     };
+
+    // Auto-detect BPM and beats in background
+    try {
+      const beatData = await analyzeAudioForBeats(audioData.url);
+      newAudio.bpm = beatData.bpm;
+      newAudio.beatTimestamps = beatData.beatTimestamps;
+      newAudio.waveformData = beatData.waveform;
+    } catch (e) {
+      console.warn('Auto beat detection skipped:', e);
+    }
+
     onChange({
       audioTracks: [...(project.audioTracks || []), newAudio],
       selectedEvent: { type: 'audio', id: newAudio.id },
+    });
+  };
+
+  const handleDetectBPM = async (track: AudioTrack) => {
+    try {
+      const beatData = await analyzeAudioForBeats(track.url);
+      onChange({
+        audioTracks: (project.audioTracks || []).map(a =>
+          a.id === track.id
+            ? { ...a, bpm: beatData.bpm, beatTimestamps: beatData.beatTimestamps, waveformData: beatData.waveform }
+            : a
+        ),
+      });
+    } catch (err) {
+      console.error('Failed to detect BPM:', err);
+    }
+  };
+
+  const handleAutoSyncZoomsToBeats = () => {
+    const audioWithBeats = (project.audioTracks || []).find(a => a.beatTimestamps && a.beatTimestamps.length > 0);
+    if (!audioWithBeats || !audioWithBeats.beatTimestamps) {
+      alert('Please import a music track first or click "Detect BPM" on an audio track to extract beats.');
+      return;
+    }
+
+    const beatZooms = generateZoomsOnBeats(audioWithBeats.beatTimestamps, 4, 1.5, 1.35);
+    onChange({
+      animations: [...project.animations, ...beatZooms],
+      selectedEvent: beatZooms[0] ? { type: 'zoom', id: beatZooms[0].id } : project.selectedEvent,
     });
   };
 
@@ -524,6 +609,11 @@ export const Timeline: React.FC<TimelineProps> = ({
     } else if (project.selectedEvent.type === 'sticker') {
       onChange({
         stickers: (project.stickers || []).filter(s => s.id !== project.selectedEvent?.id),
+        selectedEvent: null,
+      });
+    } else if (project.selectedEvent.type === 'transition') {
+      onChange({
+        transitions: (project.transitions || []).filter(tr => tr.id !== project.selectedEvent?.id),
         selectedEvent: null,
       });
     } else if (project.selectedEvent.type === 'audio') {
@@ -723,6 +813,42 @@ export const Timeline: React.FC<TimelineProps> = ({
             <span>Add Sticker</span>
           </button>
 
+          {/* Transitions Studio Modal */}
+          {onOpenTransitions && (
+            <button
+              onClick={onOpenTransitions}
+              title="Add Cinema Transition (Whip Pan, Crash Zoom, Light Leak, Glitch, Film Burn)"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition active:scale-95 shadow-sm font-medium"
+            >
+              <RotateCw className="w-3 h-3 text-purple-400" />
+              <span>+ Transition</span>
+            </button>
+          )}
+
+          {/* Snap to Beats Magnet Toggle */}
+          <button
+            onClick={() => onChange({ snapToBeat: !project.snapToBeat })}
+            title={project.snapToBeat ? 'Snap to Musical Beats (Active)' : 'Enable Snap to Musical Beats'}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium transition active:scale-95 ${
+              project.snapToBeat
+                ? 'bg-amber-500 text-dark-950 font-bold shadow-md shadow-amber-500/20'
+                : 'bg-dark-850 hover:bg-dark-800 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            <Magnet className="w-3 h-3 text-amber-400" />
+            <span>Snap Beats</span>
+          </button>
+
+          {/* Auto-Sync Zooms to Beats */}
+          <button
+            onClick={handleAutoSyncZoomsToBeats}
+            title="Auto-Sync Camera Zooms to Music Drum Beats (4-Beat Rhythm)"
+            className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95 text-[11px] font-medium shadow-sm"
+          >
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span>Sync Beats</span>
+          </button>
+
           <button
             onClick={addSpeed}
             className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
@@ -750,6 +876,10 @@ export const Timeline: React.FC<TimelineProps> = ({
           <div className="flex items-center space-x-1.5 text-indigo-400">
             <Music className="w-3 h-3" />
             <span>Audio</span>
+          </div>
+          <div className="flex items-center space-x-1.5 text-purple-400">
+            <RotateCw className="w-3 h-3" />
+            <span>Transit</span>
           </div>
           <div className="flex items-center space-x-1.5 text-brand-400">
             <Sparkles className="w-3 h-3" />
@@ -795,7 +925,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <div className="w-3 h-3 -ml-[5px] bg-brand-500 rounded-full shadow-lg shadow-brand-500/50" />
           </div>
 
-          {/* 1. Audio Track */}
+          {/* 1. Audio Track with Waveform and Beat Grid */}
           <div className="h-6 w-full relative bg-dark-950/40 rounded-lg mx-1 border border-slate-800/40">
             {(project.audioTracks || []).map((audio) => {
               const isSelected = project.selectedEvent?.type === 'audio' && project.selectedEvent.id === audio.id;
@@ -810,6 +940,9 @@ export const Timeline: React.FC<TimelineProps> = ({
                   isSelected={isSelected}
                   label={`${audio.name} (${Math.round(audio.volume * 100)}% vol)`}
                   icon={<Music className="w-3 h-3" />}
+                  waveformData={audio.waveformData}
+                  beatTimestamps={audio.beatTimestamps}
+                  bpm={audio.bpm}
                   colorClass={{
                     bg: 'bg-indigo-700/40',
                     border: 'border border-indigo-500/40',
@@ -839,6 +972,62 @@ export const Timeline: React.FC<TimelineProps> = ({
                     onChange({
                       audioTracks: (project.audioTracks || []).map(a =>
                         a.id === audio.id ? { ...a, duration: newDur } : a
+                      ),
+                    });
+                  }}
+                  getTrackWidth={getTrackWidth}
+                />
+              );
+            })}
+          </div>
+
+          {/* 1b. Cinema Transitions Track */}
+          <div className="h-6 w-full relative bg-dark-950/40 rounded-lg mx-1 border border-slate-800/40">
+            {(project.transitions || []).map((tr) => {
+              const timelineStart = speedTimeline.outputOffset(tr.startTime);
+              const isSelected = project.selectedEvent?.type === 'transition' && project.selectedEvent.id === tr.id;
+              return (
+                <DraggableBlock
+                  key={tr.id}
+                  id={tr.id}
+                  type="transition"
+                  timelineStart={timelineStart}
+                  duration={tr.duration}
+                  totalDuration={totalDuration}
+                  isSelected={isSelected}
+                  label={`${tr.type} (${tr.duration.toFixed(2)}s)`}
+                  icon={<RotateCw className="w-3 h-3 text-purple-400" />}
+                  colorClass={{
+                    bg: 'bg-purple-700/40',
+                    border: 'border border-purple-500/40',
+                    text: 'text-purple-200',
+                    selectedBg: 'bg-purple-600/80',
+                    selectedBorder: 'border border-purple-300',
+                    handleBg: 'bg-purple-400',
+                  }}
+                  onSelect={() => onChange({ selectedEvent: { type: 'transition', id: tr.id } })}
+                  onSeekToStart={() => onSeek(timelineStart)}
+                  onMove={(newTimelineStart) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      transitions: (project.transitions || []).map(item =>
+                        item.id === tr.id ? { ...item, startTime: newSourceStart } : item
+                      ),
+                    });
+                    onSeek(newTimelineStart);
+                  }}
+                  onResizeStart={(newTimelineStart, newDur) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      transitions: (project.transitions || []).map(item =>
+                        item.id === tr.id ? { ...item, startTime: newSourceStart, duration: newDur } : item
+                      ),
+                    });
+                  }}
+                  onResizeEnd={(newDur) => {
+                    onChange({
+                      transitions: (project.transitions || []).map(item =>
+                        item.id === tr.id ? { ...item, duration: newDur } : item
                       ),
                     });
                   }}
