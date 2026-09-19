@@ -20,11 +20,13 @@ import {
   Tv,
   Magnet,
   Zap,
-  RotateCw
+  RotateCw,
+  Crown,
+  Shield
 } from 'lucide-react';
 import { ProjectState } from '../../types/project';
 import { SpeedTimeline } from '../../models/speedTimeline';
-import { ZoomSegment, TapEvent, SpeedSegment, TextOverlay, AudioTrack, SubtitleItem, StickerItem, TransitionItem } from '../../types/models';
+import { ZoomSegment, TapEvent, SpeedSegment, TextOverlay, AudioTrack, SubtitleItem, StickerItem, TransitionItem, TypewriterOverlayItem, ImageOverlayItem } from '../../types/models';
 import { soundManager, AUDIO_SFX_PRESETS } from '../../services/audioService';
 import { generateSmartZoomsFromClicks } from '../../services/autoZoomService';
 import { analyzeAudioForBeats, generateZoomsOnBeats, snapTimeToNearestBeat } from '../../services/beatDetectionService';
@@ -42,11 +44,13 @@ interface TimelineProps {
   onOpenLowerThirds?: () => void;
   onOpenSFXLibrary?: () => void;
   onOpenTransitions?: () => void;
+  onOpenTypewriter?: () => void;
+  onOpenBrandAssets?: () => void;
 }
 
 interface DraggableBlockProps {
   id: string;
-  type: 'zoom' | 'tap' | 'overlay' | 'speed' | 'audio' | 'subtitle' | 'sticker' | 'transition';
+  type: 'zoom' | 'tap' | 'overlay' | 'speed' | 'audio' | 'subtitle' | 'sticker' | 'transition' | 'typewriter' | 'imageOverlay';
   timelineStart: number;
   duration: number;
   totalDuration: number;
@@ -70,6 +74,27 @@ interface DraggableBlockProps {
   onResizeStart: (newTimelineStart: number, newDuration: number) => void;
   onResizeEnd: (newDuration: number) => void;
   getTrackWidth: () => number;
+}
+
+function generateRulerTicks(totalSeconds: number): { time: number; label: string; pct: number }[] {
+  if (totalSeconds <= 0) return [];
+  let step = 1;
+  if (totalSeconds > 60) step = 10;
+  else if (totalSeconds > 30) step = 5;
+  else if (totalSeconds > 15) step = 2;
+
+  const ticks: { time: number; label: string; pct: number }[] = [];
+  for (let t = 0; t <= totalSeconds; t += step) {
+    const mins = Math.floor(t / 60);
+    const secs = Math.floor(t % 60);
+    const label = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    ticks.push({
+      time: t,
+      label,
+      pct: (t / totalSeconds) * 100,
+    });
+  }
+  return ticks;
 }
 
 const DraggableBlock: React.FC<DraggableBlockProps> = ({
@@ -247,6 +272,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   onOpenLowerThirds,
   onOpenSFXLibrary,
   onOpenTransitions,
+  onOpenTypewriter,
+  onOpenBrandAssets,
 }) => {
   const tracksRef = useRef<HTMLDivElement>(null);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
@@ -528,6 +555,59 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   };
 
+  const addTypewriter = () => {
+    if (onOpenTypewriter) {
+      onOpenTypewriter();
+    } else {
+      const sourceTime = speedTimeline.sourceTime(project.currentSeconds);
+      const newTypewriter: TypewriterOverlayItem = {
+        id: crypto.randomUUID(),
+        startTime: Math.max(0, sourceTime),
+        duration: 4.5,
+        text: 'ZOTH STUDIO · WEBGEN TERMINAL',
+        subtitle: 'Interactive Sovereign PTY Engine · Real-time Autonomous App Foundry',
+        tag: 'PHASE 01 // SYNTHESIS',
+        style: 'stroke-typewriter',
+        fontSize: 34,
+        strokeWidth: 5,
+        textColor: '#FFFFFF',
+        accentColor: '#00F0FF',
+        typingSpeedCps: 26,
+        showCursor: true,
+        cursorChar: '█',
+        position: { x: 0.5, y: 0.18 },
+        align: 'center',
+      };
+      onChange({
+        typewriters: [...(project.typewriters || []), newTypewriter],
+        selectedEvent: { type: 'typewriter', id: newTypewriter.id },
+      });
+    }
+  };
+
+  const addBrandAsset = () => {
+    if (onOpenBrandAssets) {
+      onOpenBrandAssets();
+    } else {
+      const sourceTime = speedTimeline.sourceTime(project.currentSeconds);
+      const newImg: ImageOverlayItem = {
+        id: crypto.randomUUID(),
+        startTime: Math.max(0, sourceTime),
+        duration: 6.0,
+        imageUrl: './assets/branding/zoth-navbar-logo-nobg.png',
+        name: 'Zoth Studio Navbar Logo',
+        position: { x: 0.18, y: 0.08 },
+        scale: 0.48,
+        opacity: 0.95,
+        animation: 'fade',
+      };
+      onChange({
+        imageOverlays: [...(project.imageOverlays || []), newImg],
+        selectedEvent: { type: 'imageOverlay', id: newImg.id },
+      });
+    }
+  };
+
   const handleAudioImported = async (audioData: { url: string; name: string }) => {
     const newAudio: AudioTrack = {
       id: crypto.randomUUID(),
@@ -626,6 +706,16 @@ export const Timeline: React.FC<TimelineProps> = ({
         speedSegments: project.speedSegments.filter(s => s.id !== project.selectedEvent?.id),
         selectedEvent: null,
       });
+    } else if (project.selectedEvent.type === 'typewriter') {
+      onChange({
+        typewriters: (project.typewriters || []).filter(tw => tw.id !== project.selectedEvent?.id),
+        selectedEvent: null,
+      });
+    } else if (project.selectedEvent.type === 'imageOverlay') {
+      onChange({
+        imageOverlays: (project.imageOverlays || []).filter(img => img.id !== project.selectedEvent?.id),
+        selectedEvent: null,
+      });
     }
   };
 
@@ -636,6 +726,17 @@ export const Timeline: React.FC<TimelineProps> = ({
     return `${mins}:${s.toString().padStart(2, '0')}.${ms}`;
   };
 
+  const [activeMenu, setActiveMenu] = useState<'audio' | 'motion' | 'text' | 'vfx' | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveMenu(null);
+      setIsSFXMenuOpen(false);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
     <div className="h-80 border-t border-slate-800/80 bg-dark-950 flex flex-col select-none">
       <AudioImportModal
@@ -645,41 +746,42 @@ export const Timeline: React.FC<TimelineProps> = ({
       />
 
       {/* Toolbar */}
-      <div className="h-10 border-b border-slate-800/60 px-4 flex items-center justify-between text-xs">
-        <div className="flex items-center space-x-3">
+      <div className="h-10 border-b border-slate-800/80 px-4 flex items-center justify-between text-xs bg-dark-950/90 z-20">
+        {/* Playback Controls */}
+        <div className="flex items-center space-x-2.5">
           <button
             onClick={onTogglePlay}
             className="w-7 h-7 rounded-lg bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition shadow-sm active:scale-95"
+            title={project.isPlaying ? "Pause (Space)" : "Play (Space)"}
           >
             {project.isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
           </button>
           <button
             onClick={onToggleMute}
             className="w-7 h-7 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-400 hover:text-slate-200 border border-slate-800 flex items-center justify-center transition"
+            title={project.isMuted ? "Unmute" : "Mute"}
           >
             {project.isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
-          <span className="font-mono text-slate-300 text-xs">
+          <span className="font-mono text-slate-300 text-xs tracking-tight">
             {formatTime(project.currentSeconds)} <span className="text-slate-600">/</span> {formatTime(totalDuration)}
           </span>
-        </div>
 
-        <div className="flex items-center space-x-2">
           {/* In / Out Video Trim Buttons */}
-          <div className="flex items-center space-x-1 border-r border-slate-800 pr-2">
+          <div className="flex items-center space-x-1 border-l border-slate-800 pl-2">
             <button
               onClick={setInPoint}
-              title="Set Video In-point at playhead (Shortcut: I)"
-              className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95 text-[11px] font-medium"
+              title="Set In-point (I)"
+              className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-[10px] font-medium"
             >
-              <span>[ In (I)</span>
+              [ In (I)
             </button>
             <button
               onClick={setOutPoint}
-              title="Set Video Out-point at playhead (Shortcut: O)"
-              className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95 text-[11px] font-medium"
+              title="Set Out-point (O)"
+              className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-[10px] font-medium"
             >
-              <span>Out (O) ]</span>
+              Out (O) ]
             </button>
             {(project.trimStartTime > 0 || (project.trimEndTime > 0 && project.trimEndTime < (project.videoDuration || totalDuration))) && (
               <button
@@ -690,179 +792,204 @@ export const Timeline: React.FC<TimelineProps> = ({
                 Reset
               </button>
             )}
+            <button
+              onClick={handleSplitAtPlayhead}
+              title="Split at playhead (S)"
+              className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 transition text-[10px] font-medium flex items-center space-x-1"
+            >
+              <Scissors className="w-3 h-3 text-red-400" />
+              <span>Split (S)</span>
+            </button>
           </div>
+        </div>
 
-          {/* Split / Razor tool */}
+        {/* Studio Elements Quick Actions & Dropdowns (Spacious & Clean) */}
+        <div className="flex items-center space-x-1.5" onClick={(e) => e.stopPropagation()}>
+          {/* Quick Direct Actions */}
           <button
-            onClick={handleSplitAtPlayhead}
-            title="Split selected or active clip at playhead (Shortcut: S)"
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 transition active:scale-95 font-medium"
+            onClick={addTypewriter}
+            title="Add Typewriter Stroke Typed Heading"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition text-[11px] font-medium active:scale-95"
           >
-            <Scissors className="w-3 h-3 text-red-400" />
-            <span>Split (S)</span>
+            <Type className="w-3 h-3 text-cyan-400" />
+            <span>+ Typewriter</span>
           </button>
 
-          {/* SFX Quick Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setIsSFXMenuOpen(!isSFXMenuOpen)}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition active:scale-95"
-            >
-              <Volume2 className="w-3 h-3" />
-              <span>SFX</span>
-              <ChevronDown className="w-2.5 h-2.5" />
-            </button>
-
-            {isSFXMenuOpen && (
-              <div className="absolute top-8 left-0 w-44 bg-dark-900 border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 space-y-0.5 animate-in fade-in zoom-in-95">
-                <span className="text-[9px] uppercase font-bold text-slate-500 px-2 py-0.5 block">Sound Effects</span>
-                {AUDIO_SFX_PRESETS.map((sfx) => (
-                  <button
-                    key={sfx.id}
-                    onClick={() => {
-                      sfx.play();
-                      setIsSFXMenuOpen(false);
-                    }}
-                    className="w-full px-2 py-1 rounded-lg text-left text-[11px] text-slate-300 hover:text-white hover:bg-indigo-600/30 transition flex items-center justify-between"
-                  >
-                    <span>{sfx.name}</span>
-                    <Volume2 className="w-3 h-3 text-indigo-400 opacity-60" />
-                  </button>
-                ))}
-                {onOpenSFXLibrary && (
-                  <div className="pt-1 mt-1 border-t border-slate-800">
-                    <button
-                      onClick={() => {
-                        setIsSFXMenuOpen(false);
-                        onOpenSFXLibrary();
-                      }}
-                      className="w-full px-2 py-1 rounded-lg text-left text-[11px] text-brand-300 font-semibold hover:text-white hover:bg-brand-600/20 transition flex items-center justify-between"
-                    >
-                      <span>SFX Studio Library...</span>
-                      <Sparkles className="w-3 h-3 text-brand-400" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
           <button
-            onClick={() => setIsAudioModalOpen(true)}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 transition active:scale-95"
+            onClick={addBrandAsset}
+            title="Add Zoth Studio Navbar Logo or Azoth Master Seal"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-[11px] font-medium active:scale-95"
           >
-            <Music className="w-3 h-3" />
-            <span>Add Audio</span>
+            <Crown className="w-3 h-3 text-amber-400" />
+            <span>+ Brand</span>
           </button>
 
           <button
             onClick={addZoom}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
+            title="Add Smooth Camera Zoom"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 transition text-[11px] font-medium active:scale-95"
           >
             <Sparkles className="w-3 h-3 text-brand-400" />
-            <span>Add Zoom</span>
+            <span>+ Zoom</span>
           </button>
 
-          <button
-            onClick={handleAutoZooms}
-            title="Auto-Detect & Generate Smart Zooms from Click/Tap Events"
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 border border-brand-500/30 transition active:scale-95 shadow-sm"
-          >
-            <Wand2 className="w-3 h-3 text-brand-400" />
-            <span>Auto Zooms</span>
-          </button>
-
-          <button
-            onClick={addTap}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
-          >
-            <Hand className="w-3 h-3 text-pink-400" />
-            <span>Add Tap</span>
-          </button>
-
-          <button
-            onClick={addOverlay}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
-          >
-            <Type className="w-3 h-3 text-emerald-400" />
-            <span>Add Callout</span>
-          </button>
-
-          <button
-            onClick={onOpenLowerThirds || addOverlay}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition active:scale-95"
-            title="Broadcast Lower Thirds Studio"
-          >
-            <Tv className="w-3 h-3 text-emerald-400" />
-            <span>Lower Thirds</span>
-          </button>
-
-          <button
-            onClick={addSubtitle}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
-          >
-            <Subtitles className="w-3 h-3 text-yellow-400" />
-            <span>Add Caption</span>
-          </button>
-
-          <button
-            onClick={addSticker}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
-          >
-            <Smile className="w-3 h-3 text-amber-400" />
-            <span>Add Sticker</span>
-          </button>
-
-          {/* Transitions Studio Modal */}
-          {onOpenTransitions && (
+          {/* Audio Dropdown */}
+          <div className="relative">
             <button
-              onClick={onOpenTransitions}
-              title="Add Cinema Transition (Whip Pan, Crash Zoom, Light Leak, Glitch, Film Burn)"
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition active:scale-95 shadow-sm font-medium"
+              onClick={() => setActiveMenu(activeMenu === 'audio' ? null : 'audio')}
+              className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition ${
+                activeMenu === 'audio'
+                  ? 'bg-indigo-600 text-white border-indigo-400'
+                  : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/20'
+              }`}
+            >
+              <Music className="w-3 h-3 text-indigo-400" />
+              <span>Audio</span>
+              <ChevronDown className="w-2.5 h-2.5" />
+            </button>
+            {activeMenu === 'audio' && (
+              <div className="absolute top-8 right-0 w-48 bg-dark-900 border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 space-y-1 animate-in fade-in">
+                <button
+                  onClick={() => { setActiveMenu(null); setIsAudioModalOpen(true); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Music className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Import Music / Audio...</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); onOpenSFXLibrary?.(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-pink-400" />
+                  <span>SFX Soundboard...</span>
+                </button>
+                <button
+                  onClick={() => { onChange({ snapToBeat: !project.snapToBeat }); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center justify-between transition"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Magnet className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Snap to Beats</span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${project.snapToBeat ? 'bg-amber-500/20 text-amber-300' : 'text-slate-500'}`}>
+                    {project.snapToBeat ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); handleAutoSyncZoomsToBeats(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Auto-Sync Zooms to Beats</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Text & Captions Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === 'text' ? null : 'text')}
+              className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition ${
+                activeMenu === 'text'
+                  ? 'bg-yellow-600 text-white border-yellow-400'
+                  : 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 border-yellow-500/20'
+              }`}
+            >
+              <Subtitles className="w-3 h-3 text-yellow-400" />
+              <span>Titles</span>
+              <ChevronDown className="w-2.5 h-2.5" />
+            </button>
+            {activeMenu === 'text' && (
+              <div className="absolute top-8 right-0 w-48 bg-dark-900 border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 space-y-1 animate-in fade-in">
+                <button
+                  onClick={() => { setActiveMenu(null); addSubtitle(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Subtitles className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>+ Subtitle / Caption</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); onOpenLowerThirds ? onOpenLowerThirds() : addOverlay(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Tv className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>+ Lower Thirds Banner</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); addOverlay(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Type className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>+ Callout Badge</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* More FX Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === 'vfx' ? null : 'vfx')}
+              className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition ${
+                activeMenu === 'vfx'
+                  ? 'bg-purple-600 text-white border-purple-400'
+                  : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/20'
+              }`}
             >
               <RotateCw className="w-3 h-3 text-purple-400" />
-              <span>+ Transition</span>
+              <span>More</span>
+              <ChevronDown className="w-2.5 h-2.5" />
             </button>
-          )}
+            {activeMenu === 'vfx' && (
+              <div className="absolute top-8 right-0 w-48 bg-dark-900 border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 space-y-1 animate-in fade-in">
+                <button
+                  onClick={() => { setActiveMenu(null); onOpenTransitions?.(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <RotateCw className="w-3.5 h-3.5 text-purple-400" />
+                  <span>+ Cinema Transition...</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); addSticker(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Smile className="w-3.5 h-3.5 text-amber-400" />
+                  <span>+ Sticker Emoji</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); addTap(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Hand className="w-3.5 h-3.5 text-pink-400" />
+                  <span>+ Click / Tap Event</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); handleAutoZooms(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Wand2 className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Auto-Detect Zooms</span>
+                </button>
+                <button
+                  onClick={() => { setActiveMenu(null); addSpeed(); }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-200 hover:text-white hover:bg-slate-800 flex items-center space-x-2 transition"
+                >
+                  <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                  <span>+ Speed Curve Segment</span>
+                </button>
+              </div>
+            )}
+          </div>
 
-          {/* Snap to Beats Magnet Toggle */}
-          <button
-            onClick={() => onChange({ snapToBeat: !project.snapToBeat })}
-            title={project.snapToBeat ? 'Snap to Musical Beats (Active)' : 'Enable Snap to Musical Beats'}
-            className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium transition active:scale-95 ${
-              project.snapToBeat
-                ? 'bg-amber-500 text-dark-950 font-bold shadow-md shadow-amber-500/20'
-                : 'bg-dark-850 hover:bg-dark-800 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <Magnet className="w-3 h-3 text-amber-400" />
-            <span>Snap Beats</span>
-          </button>
-
-          {/* Auto-Sync Zooms to Beats */}
-          <button
-            onClick={handleAutoSyncZoomsToBeats}
-            title="Auto-Sync Camera Zooms to Music Drum Beats (4-Beat Rhythm)"
-            className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition active:scale-95 text-[11px] font-medium shadow-sm"
-          >
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span>Sync Beats</span>
-          </button>
-
-          <button
-            onClick={addSpeed}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-dark-850 hover:bg-dark-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition active:scale-95"
-          >
-            <Gauge className="w-3 h-3 text-amber-400" />
-            <span>Add Speed</span>
-          </button>
-
+          {/* Delete selected item */}
           {project.selectedEvent && (
             <button
               onClick={removeSelected}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition ml-2 active:scale-95"
+              title="Delete selected item (Delete / Backspace)"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition ml-1 active:scale-95 text-[11px] font-medium"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-3 h-3 text-rose-400" />
               <span>Delete</span>
             </button>
           )}
@@ -888,6 +1015,14 @@ export const Timeline: React.FC<TimelineProps> = ({
           <div className="flex items-center space-x-1.5 text-pink-400">
             <Hand className="w-3 h-3" />
             <span>Taps</span>
+          </div>
+          <div className="flex items-center space-x-1.5 text-cyan-400">
+            <Type className="w-3 h-3" />
+            <span>Typewriter</span>
+          </div>
+          <div className="flex items-center space-x-1.5 text-amber-400">
+            <Crown className="w-3 h-3" />
+            <span>Brand</span>
           </div>
           <div className="flex items-center space-x-1.5 text-emerald-400">
             <Type className="w-3 h-3" />
@@ -917,6 +1052,21 @@ export const Timeline: React.FC<TimelineProps> = ({
           onPointerDown={handleTrackPointerDown}
           className="flex-1 relative ml-3 bg-dark-900/60 rounded-xl border border-slate-800/80 overflow-hidden flex flex-col justify-around py-1 cursor-pointer"
         >
+          {/* Timecode Ruler Ticks Background Grid */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            {generateRulerTicks(totalDuration).map(tick => (
+              <div
+                key={tick.time}
+                className="absolute top-0 bottom-0 border-l border-slate-800/40 flex flex-col justify-between"
+                style={{ left: `${tick.pct}%` }}
+              >
+                <span className="text-[9px] font-mono text-slate-500 pl-1 pt-0.5 select-none opacity-50">
+                  {tick.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
           {/* Playhead Line */}
           <div 
             className="absolute top-0 bottom-0 w-0.5 bg-brand-500 z-40 pointer-events-none transition-[left] duration-75"
@@ -1140,6 +1290,118 @@ export const Timeline: React.FC<TimelineProps> = ({
                     onChange({
                       tapEvents: project.tapEvents.map(t =>
                         t.id === tap.id ? { ...t, duration: newDur } : t
+                      ),
+                    });
+                  }}
+                  getTrackWidth={getTrackWidth}
+                />
+              );
+            })}
+          </div>
+
+          {/* 3b. Typewriter Stroke Captions Track */}
+          <div className="h-6 w-full relative bg-dark-950/40 rounded-lg mx-1 border border-slate-800/40">
+            {(project.typewriters || []).map((tw) => {
+              const timelineStart = speedTimeline.outputOffset(tw.startTime);
+              const isSelected = project.selectedEvent?.type === 'typewriter' && project.selectedEvent.id === tw.id;
+              return (
+                <DraggableBlock
+                  key={tw.id}
+                  id={tw.id}
+                  type="typewriter"
+                  timelineStart={timelineStart}
+                  duration={tw.duration}
+                  totalDuration={totalDuration}
+                  isSelected={isSelected}
+                  label={tw.tag ? `[${tw.tag}] ${tw.text}` : tw.text}
+                  icon={<Type className="w-3 h-3 text-cyan-400" />}
+                  colorClass={{
+                    bg: 'bg-cyan-950/60',
+                    border: 'border border-cyan-500/50',
+                    text: 'text-cyan-200',
+                    selectedBg: 'bg-cyan-600/80',
+                    selectedBorder: 'border border-cyan-300',
+                    handleBg: 'bg-cyan-400',
+                  }}
+                  onSelect={() => onChange({ selectedEvent: { type: 'typewriter', id: tw.id } })}
+                  onSeekToStart={() => onSeek(timelineStart)}
+                  onMove={(newTimelineStart) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      typewriters: (project.typewriters || []).map(item =>
+                        item.id === tw.id ? { ...item, startTime: newSourceStart } : item
+                      ),
+                    });
+                    onSeek(newTimelineStart);
+                  }}
+                  onResizeStart={(newTimelineStart, newDur) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      typewriters: (project.typewriters || []).map(item =>
+                        item.id === tw.id ? { ...item, startTime: newSourceStart, duration: newDur } : item
+                      ),
+                    });
+                  }}
+                  onResizeEnd={(newDur) => {
+                    onChange({
+                      typewriters: (project.typewriters || []).map(item =>
+                        item.id === tw.id ? { ...item, duration: newDur } : item
+                      ),
+                    });
+                  }}
+                  getTrackWidth={getTrackWidth}
+                />
+              );
+            })}
+          </div>
+
+          {/* 3c. Brand & Image Overlays Track */}
+          <div className="h-6 w-full relative bg-dark-950/40 rounded-lg mx-1 border border-slate-800/40">
+            {(project.imageOverlays || []).map((img) => {
+              const timelineStart = speedTimeline.outputOffset(img.startTime);
+              const isSelected = project.selectedEvent?.type === 'imageOverlay' && project.selectedEvent.id === img.id;
+              return (
+                <DraggableBlock
+                  key={img.id}
+                  id={img.id}
+                  type="imageOverlay"
+                  timelineStart={timelineStart}
+                  duration={img.duration}
+                  totalDuration={totalDuration}
+                  isSelected={isSelected}
+                  label={img.name || 'Brand Overlay'}
+                  icon={<Crown className="w-3 h-3 text-amber-400" />}
+                  colorClass={{
+                    bg: 'bg-amber-950/60',
+                    border: 'border border-amber-500/50',
+                    text: 'text-amber-200',
+                    selectedBg: 'bg-amber-600/80',
+                    selectedBorder: 'border border-amber-300',
+                    handleBg: 'bg-amber-400',
+                  }}
+                  onSelect={() => onChange({ selectedEvent: { type: 'imageOverlay', id: img.id } })}
+                  onSeekToStart={() => onSeek(timelineStart)}
+                  onMove={(newTimelineStart) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      imageOverlays: (project.imageOverlays || []).map(item =>
+                        item.id === img.id ? { ...item, startTime: newSourceStart } : item
+                      ),
+                    });
+                    onSeek(newTimelineStart);
+                  }}
+                  onResizeStart={(newTimelineStart, newDur) => {
+                    const newSourceStart = speedTimeline.sourceTime(newTimelineStart);
+                    onChange({
+                      imageOverlays: (project.imageOverlays || []).map(item =>
+                        item.id === img.id ? { ...item, startTime: newSourceStart, duration: newDur } : item
+                      ),
+                    });
+                  }}
+                  onResizeEnd={(newDur) => {
+                    onChange({
+                      imageOverlays: (project.imageOverlays || []).map(item =>
+                        item.id === img.id ? { ...item, duration: newDur } : item
                       ),
                     });
                   }}

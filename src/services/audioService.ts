@@ -422,6 +422,118 @@ class SoundManager {
     }
   }
 
+  playKeyboardClack() {
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      // Transient tactile click
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1400, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.02);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch (e) {
+      console.warn('SFX audio error:', e);
+    }
+  }
+
+  playCyberHologram() {
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const duration = 0.35;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1320, now + 0.08);
+      osc.frequency.setValueAtTime(1760, now + 0.16);
+      osc.frequency.exponentialRampToValueAtTime(2200, now + duration);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('SFX audio error:', e);
+    }
+  }
+
+  playImpactBoom() {
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const duration = 0.8;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + duration);
+
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('SFX audio error:', e);
+    }
+  }
+
+  playVinylScratch() {
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const duration = 0.22;
+
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(450, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + duration * 0.5);
+      osc.frequency.exponentialRampToValueAtTime(600, now + duration);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.Q.setValueAtTime(3, now);
+
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('SFX audio error:', e);
+    }
+  }
+
   playPreset(id: string) {
     switch (id) {
       case 'tap':
@@ -440,6 +552,14 @@ class SoundManager {
         return this.playSwoosh();
       case 'bass':
         return this.playBassDrop();
+      case 'clack':
+        return this.playKeyboardClack();
+      case 'hologram':
+        return this.playCyberHologram();
+      case 'impact':
+        return this.playImpactBoom();
+      case 'scratch':
+        return this.playVinylScratch();
       default:
         return this.playTapClick();
     }
@@ -457,6 +577,10 @@ export const AUDIO_SFX_PRESETS: AudioSfxPreset[] = [
   { id: 'laser', name: 'Laser Zap', play: () => soundManager.playLaser() },
   { id: 'swoosh', name: 'Deep Swoosh', play: () => soundManager.playSwoosh() },
   { id: 'bass', name: 'Bass Drop', play: () => soundManager.playBassDrop() },
+  { id: 'clack', name: 'Keyboard Clack', play: () => soundManager.playKeyboardClack() },
+  { id: 'hologram', name: 'Cyber Hologram', play: () => soundManager.playCyberHologram() },
+  { id: 'impact', name: 'Impact Boom', play: () => soundManager.playImpactBoom() },
+  { id: 'scratch', name: 'Vinyl Scratch', play: () => soundManager.playVinylScratch() },
 ];
 
 /**

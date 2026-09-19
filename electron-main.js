@@ -42,6 +42,14 @@ function getEnrichedPath() {
   ].filter(Boolean).join(':');
 }
 
+// Linux Hardware acceleration & AppImage sandbox compatibility switches
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('disable-dev-shm-usage');
+  app.commandLine.appendSwitch('enable-transparent-visuals');
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1360,
@@ -56,7 +64,15 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false,
+      sandbox: false,
     },
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Failed to load Maya UI:', errorCode, errorDescription, validatedURL);
+  });
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('Renderer process gone:', details);
   });
 
   if (process.env.NODE_ENV === 'development') {
@@ -418,7 +434,7 @@ ipcMain.handle('start-native-export', async (event, config) => {
       const cleanBase64 = bgAudioBase64.replace(/^data:audio\/[^;]+;base64,/, '');
       fs.writeFileSync(tempAudioPath, Buffer.from(cleanBase64, 'base64'));
       currentExportTempFiles.push(tempAudioPath);
-      args.push('-i', tempAudioPath);
+      args.push('-stream_loop', '-1', '-i', tempAudioPath);
       audioInputIndex = 1;
     } catch (e) {
       console.warn('Could not write temp audio file for export:', e);

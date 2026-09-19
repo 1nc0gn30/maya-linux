@@ -32,6 +32,7 @@ import {
 } from '../../services/metaEditsEffectsService';
 import { drawTransitionEffect } from '../../services/transitionsService';
 import { drawVHSTapeGlitch, drawVintage8mmFilm, drawPrismRefraction } from '../../services/vintageVFXService';
+import { drawTypewriterOverlays, drawImageOverlays } from '../../services/typewriterOverlayService';
 import { Upload } from 'lucide-react';
 
 interface CanvasPreviewProps {
@@ -40,6 +41,7 @@ interface CanvasPreviewProps {
   onOffsetChange: (offset: { width: number; height: number }) => void;
   onTapPositioned?: (position: { x: number; y: number }) => void;
   onOpenFile: () => void;
+  onFileSelect?: (file: File) => void;
   onChange?: (updater: Partial<ProjectState>) => void;
 }
 
@@ -47,12 +49,29 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({
   project,
   videoRef,
   onOpenFile,
+  onFileSelect,
   onChange,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [frameImg, setFrameImg] = useState<HTMLImageElement | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const loadedImagesMapRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Preload image overlays
+  useEffect(() => {
+    if (!project.imageOverlays) return;
+    for (const ov of project.imageOverlays) {
+      if (ov.imageUrl && !loadedImagesMapRef.current.has(ov.imageUrl)) {
+        const img = new Image();
+        img.src = ov.imageUrl;
+        img.onload = () => {
+          loadedImagesMapRef.current.set(ov.imageUrl, img);
+        };
+      }
+    }
+  }, [project.imageOverlays]);
 
   const aspect = CANVAS_ASPECTS[project.canvasAspect];
   const frame = getDeviceFrame(project.deviceModelID, project.deviceColorID);
@@ -291,6 +310,12 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({
         // Draw Watermark Badge
         drawWatermark(ctx, width, height, project.watermark);
 
+        // Draw Typewriter Stroke Captions & Headings
+        drawTypewriterOverlays(ctx, width, height, project.typewriters, sourceTime);
+
+        // Draw Brand Assets & Image Overlays
+        drawImageOverlays(ctx, width, height, project.imageOverlays, sourceTime, loadedImagesMapRef.current);
+
         // Apply Global CapCut Video Effects (Vignette, Film Grain, Bloom, Scanlines)
         applyVideoEffects(ctx, width, height, project.effects);
 
@@ -484,11 +509,52 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({
       }
     : {};
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file && onFileSelect) {
+      onFileSelect(file);
+    } else if (onOpenFile) {
+      onOpenFile();
+    }
+  };
+
   return (
     <div 
       ref={containerRef}
-      className="flex-1 h-full bg-dark-950 flex items-center justify-center p-8 relative overflow-hidden select-none"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex-1 h-full bg-dark-950 flex items-center justify-center p-8 relative overflow-hidden select-none transition-all ${
+        isDragOver ? 'bg-brand-950/40 ring-4 ring-inset ring-brand-500/50' : ''
+      }`}
     >
+      {/* Drag Over Overlay Prompt */}
+      {isDragOver && (
+        <div className="absolute inset-0 bg-brand-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+          <div className="w-20 h-20 rounded-3xl bg-brand-500/20 border border-brand-400/40 flex items-center justify-center animate-bounce shadow-2xl shadow-brand-500/50">
+            <Upload className="w-10 h-10 text-brand-300" />
+          </div>
+          <h2 className="text-xl font-bold text-white mt-4">Drop Screen Recording Here</h2>
+          <p className="text-xs text-brand-200 mt-1">Import into Maya Studio Pro for Instant Device Mockups & CapCut Export</p>
+        </div>
+      )}
+
       {project.videoURL ? (
         <div 
           ref={canvasWrapperRef}
@@ -577,14 +643,34 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({
       ) : (
         <div 
           onClick={onOpenFile}
-          className="flex flex-col items-center justify-center space-y-4 p-12 rounded-3xl border-2 border-dashed border-slate-800 hover:border-brand-500/50 bg-dark-900/40 hover:bg-dark-900/60 transition cursor-pointer group"
+          className="max-w-md w-full flex flex-col items-center justify-center space-y-5 p-10 rounded-3xl border-2 border-dashed border-slate-800 hover:border-brand-500/60 bg-dark-900/50 hover:bg-dark-900/80 transition-all cursor-pointer group shadow-2xl text-center"
         >
-          <div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center group-hover:scale-110 transition shadow-lg shadow-brand-500/10">
-            <Upload className="w-8 h-8 text-brand-400" />
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-brand-600/30 via-indigo-500/20 to-cyan-500/20 border border-brand-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl shadow-brand-500/20">
+            <Upload className="w-10 h-10 text-brand-400" />
           </div>
-          <div className="text-center space-y-1">
-            <h3 className="font-semibold text-slate-200 text-sm">Drop a screen recording here</h3>
-            <p className="text-xs text-slate-400">MP4, MOV, WebM recordings supported</p>
+          <div className="space-y-1.5">
+            <h3 className="font-bold text-slate-100 text-base">Drag & Drop Screen Recording</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Supports MP4, MOV, and WebM video recordings.<br />Or click anywhere to select a file from disk.
+            </p>
+          </div>
+
+          {/* Studio Feature Chips */}
+          <div className="grid grid-cols-2 gap-2 pt-2 w-full text-left">
+            <div className="p-2.5 rounded-xl bg-dark-950/80 border border-slate-800/80 flex items-center space-x-2">
+              <span className="text-base">📱</span>
+              <div>
+                <div className="text-[11px] font-semibold text-slate-200">3D Device Frames</div>
+                <div className="text-[9px] text-slate-400">iPhone 17 Pro, Mac, Pixel 9</div>
+              </div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-dark-950/80 border border-slate-800/80 flex items-center space-x-2">
+              <span className="text-base">✨</span>
+              <div>
+                <div className="text-[11px] font-semibold text-slate-200">CapCut / JianYing</div>
+                <div className="text-[9px] text-slate-400">1-Click Draft Export</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -748,6 +834,10 @@ function getFilterForColorGrade(grade?: ColorGradeType): string {
     case 'duneDesert': return 'sepia(0.42) saturate(1.38) hue-rotate(-22deg) contrast(1.22)';
     case 'bladeRunner': return 'contrast(1.38) saturate(1.48) hue-rotate(185deg) brightness(0.96)';
     case 'interstellar': return 'contrast(1.28) saturate(1.18) brightness(1.06) hue-rotate(12deg)';
+    case 'tealOrange': return 'contrast(1.3) saturate(1.35) hue-rotate(-15deg) brightness(1.02)';
+    case 'datamosh': return 'contrast(1.4) saturate(1.8) invert(0.08) hue-rotate(45deg)';
+    case 'infraredHeat': return 'invert(0.9) hue-rotate(180deg) saturate(2.2) contrast(1.4)';
+    case 'crtArcade': return 'contrast(1.35) brightness(1.1) saturate(1.3) sepia(0.1)';
     default: return 'none';
   }
 }
@@ -770,10 +860,17 @@ function drawSubtitles(
     const textToDraw = sub.uppercase ? sub.text.toUpperCase() : sub.text;
     const fontSize = sub.fontSize || 36;
 
-    // Pop scale entrance animation
     const elapsed = sourceTime - sub.startTime;
+    const progress = Math.min(1, Math.max(0, elapsed / sub.duration));
+
+    // Pop scale entrance animation
     let popScale = 1.0;
-    if (elapsed < 0.12) {
+    if (sub.style === 'popBounce') {
+      if (elapsed < 0.15) {
+        const t = elapsed / 0.15;
+        popScale = 0.5 + Math.sin(t * Math.PI * 0.5) * 0.65;
+      }
+    } else if (elapsed < 0.12) {
       popScale = 0.82 + (elapsed / 0.12) * 0.23;
     } else if (elapsed < 0.22) {
       popScale = 1.05 - ((elapsed - 0.12) / 0.10) * 0.05;
@@ -783,22 +880,59 @@ function drawSubtitles(
     ctx.translate(x, y);
     ctx.scale(popScale, popScale);
 
-    if (sub.style === 'hormozi') {
+    const words = textToDraw.trim().split(/\s+/);
+    const wordCount = words.length;
+    const activeWordIdx = Math.min(wordCount - 1, Math.floor(progress * wordCount));
+
+    if (sub.style === 'hormozi' || sub.style === 'karaoke') {
       ctx.font = `900 ${fontSize}px Impact, "Arial Black", sans-serif`;
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
 
-      // Thick bold black stroke
-      ctx.strokeStyle = sub.strokeHex || '#000000';
-      ctx.lineWidth = Math.max(6, fontSize * 0.22);
-      ctx.lineJoin = 'round';
-      ctx.miterLimit = 2;
-      ctx.strokeText(textToDraw, 0, 0);
+      const spaceWidth = ctx.measureText(' ').width;
+      let totalWidth = 0;
+      const wordWidths = words.map(w => {
+        const wWidth = ctx.measureText(w).width;
+        totalWidth += wWidth;
+        return wWidth;
+      });
+      totalWidth += spaceWidth * Math.max(0, wordCount - 1);
 
-      // High-vis yellow fill
-      ctx.fillStyle = sub.colorHex || '#FDE047';
-      ctx.fillText(textToDraw, 0, 0);
-    } else if (sub.style === 'neonGlow') {
+      let currentX = -totalWidth / 2;
+
+      words.forEach((word, idx) => {
+        const isActive = idx === activeWordIdx;
+        const isPast = idx < activeWordIdx;
+
+        ctx.save();
+        const wordCenter = currentX + wordWidths[idx] / 2;
+        ctx.translate(wordCenter, 0);
+
+        if (isActive) {
+          ctx.scale(1.12, 1.12);
+        }
+
+        // Bold black outline stroke
+        ctx.strokeStyle = sub.strokeHex || '#000000';
+        ctx.lineWidth = Math.max(6, fontSize * 0.22);
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeText(word, -wordWidths[idx] / 2, 0);
+
+        // Word Fill Color
+        if (isActive) {
+          ctx.fillStyle = '#38BDF8'; // High contrast active word cyan highlight
+        } else if (isPast) {
+          ctx.fillStyle = sub.colorHex || '#FDE047';
+        } else {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        }
+        ctx.fillText(word, -wordWidths[idx] / 2, 0);
+        ctx.restore();
+
+        currentX += wordWidths[idx] + spaceWidth;
+      });
+    } else if (sub.style === 'neonGlow' || sub.style === 'popBounce') {
       ctx.font = `800 ${fontSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -807,7 +941,7 @@ function drawSubtitles(
       const padX = 24;
       const padY = 12;
 
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
+      ctx.fillStyle = 'rgba(10, 15, 30, 0.88)';
       ctx.strokeStyle = sub.colorHex || '#38BDF8';
       ctx.shadowColor = sub.colorHex || '#38BDF8';
       ctx.shadowBlur = 18;

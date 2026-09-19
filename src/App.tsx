@@ -14,11 +14,13 @@ import { LowerThirdsModal } from './components/Modals/LowerThirdsModal';
 import { SFXLibraryModal } from './components/Modals/SFXLibraryModal';
 import { MetaEditsModal } from './components/Modals/MetaEditsModal';
 import { TransitionsModal } from './components/Modals/TransitionsModal';
+import { TypewriterModal } from './components/Modals/TypewriterModal';
+import { BrandAssetsModal } from './components/Modals/BrandAssetsModal';
 import { GRADIENT_PRESETS } from './models/devices';
 import { SpeedTimeline } from './models/speedTimeline';
 import { exportVideo } from './services/exportService';
 import { computeAudioDucking, computeAudioFade } from './services/audioService';
-import { AudioTrack, StickerItem, SubtitleItem, TextOverlay, MetaEditsConfig, TransitionItem } from './types/models';
+import { AudioTrack, StickerItem, SubtitleItem, TextOverlay, MetaEditsConfig, TransitionItem, TypewriterOverlayItem, ImageOverlayItem } from './types/models';
 
 const initialProject: ProjectState = {
   videoURL: null,
@@ -107,6 +109,8 @@ const initialProject: ProjectState = {
   tapEvents: [],
   speedSegments: [],
   transitions: [],
+  typewriters: [],
+  imageOverlays: [],
   overlays: [],
   subtitles: [],
   stickers: [],
@@ -133,6 +137,8 @@ export const App: React.FC = () => {
   const [isSFXModalOpen, setIsSFXModalOpen] = useState(false);
   const [isMetaEditsModalOpen, setIsMetaEditsModalOpen] = useState(false);
   const [isTransitionsModalOpen, setIsTransitionsModalOpen] = useState(false);
+  const [isTypewriterModalOpen, setIsTypewriterModalOpen] = useState(false);
+  const [isBrandAssetsModalOpen, setIsBrandAssetsModalOpen] = useState(false);
 
   const historyRef = useRef<ProjectState[]>([]);
   const futureRef = useRef<ProjectState[]>([]);
@@ -186,10 +192,7 @@ export const App: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const loadVideoFile = (file: File) => {
     const url = URL.createObjectURL(file);
     updateProject({
       videoURL: url,
@@ -197,6 +200,11 @@ export const App: React.FC = () => {
       isPlaying: false,
       currentSeconds: 0,
     });
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) loadVideoFile(file);
   };
 
   const handleSaveProject = () => {
@@ -668,6 +676,30 @@ export const App: React.FC = () => {
         }}
       />
 
+      <TypewriterModal
+        isOpen={isTypewriterModalOpen}
+        onClose={() => setIsTypewriterModalOpen(false)}
+        project={project}
+        onAddTypewriter={(typewriter: TypewriterOverlayItem) => {
+          updateProject({
+            typewriters: [...(project.typewriters || []), typewriter],
+            selectedEvent: { type: 'typewriter', id: typewriter.id },
+          }, true);
+        }}
+      />
+
+      <BrandAssetsModal
+        isOpen={isBrandAssetsModalOpen}
+        onClose={() => setIsBrandAssetsModalOpen(false)}
+        project={project}
+        onAddBrandAsset={(asset: ImageOverlayItem) => {
+          updateProject({
+            imageOverlays: [...(project.imageOverlays || []), asset],
+            selectedEvent: { type: 'imageOverlay', id: asset.id },
+          }, true);
+        }}
+      />
+
       {/* Main App Layout */}
       <Header
         project={project}
@@ -682,6 +714,8 @@ export const App: React.FC = () => {
         onOpenSFX={() => setIsSFXModalOpen(true)}
         onOpenMetaEdits={() => setIsMetaEditsModalOpen(true)}
         onOpenTransitions={() => setIsTransitionsModalOpen(true)}
+        onOpenTypewriter={() => setIsTypewriterModalOpen(true)}
+        onOpenBrandAssets={() => setIsBrandAssetsModalOpen(true)}
         onOpenShortcuts={() => setIsShortcutsModalOpen(true)}
         onUndo={undo}
         onRedo={redo}
@@ -700,6 +734,7 @@ export const App: React.FC = () => {
           videoRef={videoRef}
           onOffsetChange={(offset) => updateProject({ offset })}
           onOpenFile={handleOpenFile}
+          onFileSelect={loadVideoFile}
           onChange={updateProject}
         />
 
@@ -721,6 +756,8 @@ export const App: React.FC = () => {
         onOpenLowerThirds={() => setIsLowerThirdsModalOpen(true)}
         onOpenSFXLibrary={() => setIsSFXModalOpen(true)}
         onOpenTransitions={() => setIsTransitionsModalOpen(true)}
+        onOpenTypewriter={() => setIsTypewriterModalOpen(true)}
+        onOpenBrandAssets={() => setIsBrandAssetsModalOpen(true)}
       />
     </div>
   );

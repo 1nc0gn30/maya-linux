@@ -31,27 +31,36 @@ chmod +x Maya-1.1.0.AppImage
 
 ## ✨ Features
 
-### 📱 Device Framing & Mockups
+### 📱 Device Framing & 3D Mockups
 - **iPhone 17 Pro**: Cosmic Orange, Deep Blue, Silver.
 - **iPhone 16 Pro**: Natural Titanium, Black Titanium, White Titanium, Desert Titanium.
 - **iPhone 15 Pro**: Natural Titanium, Black Titanium, White Titanium.
-- **iPad Pro 11"** (Landscape M4) & **MacBook Pro 14"** with pixel-accurate screen cutouts and rounded mask corners.
-- **Generic Phone Mode**: Brand-agnostic device frame with configurable **bezel width**, **bezel color**, and **corner radius**.
-- **No-Frame Mode**: Ship clean recordings with custom rounded corners only.
+- **iPad Pro 11"** (Landscape M4), **MacBook Pro 14"**, **Google Pixel 9 Pro**, **Apple Watch Ultra 2**, **Retro Terminal**, and **Browser Frame** with traffic lights.
+- **Generic Phone Mode**: Configurable bezel width, color, and corner radius.
 - **Canvas Aspect Ratios**: **1:1** (Square), **9:16** (Reels / Shorts / TikTok), **4:5** (Portrait), **4:3** (Landscape), **16:9** (YouTube / Widescreen).
-- **Photorealistic Drop Shadows**: Blur radius, X/Y offset, and opacity controls.
+- **Interactive Drag & Drop**: Drop video files directly onto the canvas to start editing instantly.
 
-### 📐 3D Perspective, Pitch & Yaw (Keynote Mode)
-- **3D Tilt & Rotation**: Adjust Pitch (`rotateX`), Yaw (`rotateY`), and Roll (`rotateZ`) in real time.
-- **1-Click Isometric Presets**: *Isometric Left*, *Isometric Right*, and *Flat / Reset*.
-- **Cinematic Parallax Drift**: Subtle auto-drift motion around the device during playback.
+### 🎬 CapCut & JianYing 1-Click Draft Exporter
+- **Native Draft Export**: Export full multi-track project timelines directly into standard **CapCut** and **JianYing** draft folders (`draft_content.json`), compatible with CapCut Desktop and `capcut-cli` / `cutcli`.
 
-### ⏱ Multi-Track Timeline & Animation System
-- **Zooms Track**: 6 easing curves (*Spring*, *Bouncy*, *Smooth*, *Snappy*, *Gentle*, *Linear*) with *Top, Center, Bottom* focus anchors.
-- **Taps Track**: Interactive *Ripple*, *Pulse*, and *Ring* feedback animations positioned anywhere on the screen with built-in **SFX click audio**.
-- **Callouts Track**: Feature badges (*Pill*, *Frosted Glass*, *Neon Glow*) with custom text, font size, and timing.
-- **Speed Segments Track**: Non-destructive piecewise retiming from **0.25× to 4×**.
+### 🎤 Kinetic Word-by-Word Karaoke Captions
+- **Spoken Word Highlighting**: Real-time word-by-word karaoke subtitle engine with dynamic accent highlights.
+- **Preset Styles**: **Alex Hormozi Impact**, **Neon Glow**, **Glass Card**, **Minimal**, and **Elastic Pop Bounce**.
+
+### ⏱ Multi-Track Timeline & Timecode Ruler
+- **Timecode Ruler**: Precise timestamp ticks (`00:00`, `00:05`, `00:10`) along the timeline.
+- **Zooms Track**: 6 easing curves (*Spring*, *Bouncy*, *Smooth*, *Snappy*, *Gentle*, *Linear*) with focus anchor panning.
+- **Auto-Sync to Audio Beats**: Automatically detect music beats and snap camera zooms & cuts to the rhythm.
+- **Taps Track**: Interactive *Ripple*, *Pulse*, and *Ring* feedback animations with click SFX.
+- **Typewriter Headings**: Animated stroke-typed headlines & explainer text.
+- **SFX Soundboard Library**: Built-in sound effects (Whooshes, Pops, Clicks, Bells, Risers).
+- **Speed Retiming**: Non-destructive retiming from **0.25× to 4×**.
 - **Non-Destructive Trimming**: Mark In (<kbd>I</kbd>) and Out (<kbd>O</kbd>) points on the recording.
+
+### 🚀 4K Ultra HD & Vertical Reel Export Hub
+- **4K 60 FPS & 2K Quad HD**: Render at 3840x2160 or 2560x1440 with max bitrate.
+- **9:16 Vertical Reel Mode**: Direct export for Instagram Reels, YouTube Shorts, and TikTok.
+- **Transparent Alpha (WebM/ProRes)**: Export transparent video overlays for OBS or video editors.
 
 ### 🎵 Background Audio & YouTube (`yt-dlp`) Downloader
 - **Direct YouTube Audio Extraction**: Paste any YouTube video URL to automatically extract and attach the audio track using `yt-dlp`.

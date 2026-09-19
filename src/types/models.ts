@@ -226,7 +226,11 @@ export type ColorGradeType =
   | 'oppenheimer70mm'
   | 'duneDesert'
   | 'bladeRunner'
-  | 'interstellar';
+  | 'interstellar'
+  | 'tealOrange'
+  | 'datamosh'
+  | 'infraredHeat'
+  | 'crtArcade';
 
 export interface VideoEffectsConfig {
   colorGrade: ColorGradeType;
@@ -332,16 +336,17 @@ export interface MetaEditsConfig {
   };
 }
 
-export type SubtitleStyle = 'hormozi' | 'neonGlow' | 'glassCard' | 'minimal' | 'karaoke';
+export type SubtitleStyle = 'hormozi' | 'neonGlow' | 'glassCard' | 'minimal' | 'karaoke' | 'popBounce';
 
 export interface SubtitleItem {
   id: string;
   startTime: number;
   duration: number;
   text: string;
-  style: SubtitleStyle;
-  fontSize: number; // 18 to 64
-  colorHex: string;
+  speaker?: string;
+  style?: SubtitleStyle;
+  fontSize?: number;
+  colorHex?: string;
   strokeHex?: string;
   bgHex?: string;
   uppercase?: boolean;
@@ -387,6 +392,59 @@ export interface StickerItem {
   rotation?: number; // degrees
 }
 
+export type TypewriterStyle = 
+  | 'stroke-typewriter' 
+  | 'cyber-glass' 
+  | 'alchemical-gold' 
+  | 'minimal-heading' 
+  | 'terminal-prompt';
+
+export interface TypewriterOverlayItem {
+  id: string;
+  startTime: number;
+  duration: number;
+  text: string;
+  subtitle?: string;
+  tag?: string;
+  position: { x: number; y: number }; // normalized 0..1
+  style: TypewriterStyle;
+  fontSize: number; // 18 to 72
+  strokeWidth?: number; // 1 to 8
+  strokeColor?: string;
+  textColor: string;
+  accentColor?: string;
+  bgHex?: string;
+  typingSpeedCps?: number; // characters per second (default 24)
+  showCursor?: boolean;
+  cursorChar?: string; // e.g. "█", "|", "⚡"
+  maxWidthFraction?: number; // 0.3 to 0.95
+  align?: 'left' | 'center' | 'right';
+  glowColor?: string;
+  glowRadius?: number;
+}
+
+export type ImageOverlayAnimation = 'fade' | 'pop' | 'float' | 'pulse' | 'slide-in' | 'spin' | 'none';
+
+export interface ImageOverlayItem {
+  id: string;
+  startTime: number;
+  duration: number;
+  imageUrl: string;
+  name?: string;
+  position: { x: number; y: number }; // normalized 0..1
+  scale: number; // 0.2 to 3.0
+  opacity: number; // 0..1
+  rotation?: number; // degrees
+  animation: ImageOverlayAnimation;
+  blendMode?: 'normal' | 'screen' | 'overlay' | 'lighten';
+  isCircularAvatar?: boolean;
+  borderHex?: string;
+  borderWidth?: number;
+  glowColor?: string;
+  glowRadius?: number;
+  presetKey?: string;
+}
+
 export interface WatermarkConfig {
   enabled: boolean;
   text?: string;
@@ -403,6 +461,9 @@ export type SelectedEvent =
   | { type: 'overlay'; id: string }
   | { type: 'subtitle'; id: string }
   | { type: 'sticker'; id: string }
+  | { type: 'typewriter'; id: string }
+  | { type: 'imageOverlay'; id: string }
   | { type: 'audio'; id: string }
   | { type: 'video'; id: string }
   | null;
+

@@ -31,6 +31,7 @@ import {
 } from './metaEditsEffectsService';
 import { drawTransitionEffect } from './transitionsService';
 import { drawVHSTapeGlitch, drawVintage8mmFilm, drawPrismRefraction } from './vintageVFXService';
+import { drawTypewriterOverlays, drawImageOverlays } from './typewriterOverlayService';
 
 export interface ExportOptions {
   transparent: boolean;
@@ -77,6 +78,18 @@ export async function exportVideo(
   let bgImage: HTMLImageElement | null = null;
   if (project.background.type === 'image' && project.background.imageURL) {
     bgImage = await loadImage(project.background.imageURL);
+  }
+
+  const loadedImagesMap = new Map<string, HTMLImageElement>();
+  if (project.imageOverlays) {
+    for (const ov of project.imageOverlays) {
+      if (ov.imageUrl && !loadedImagesMap.has(ov.imageUrl)) {
+        try {
+          const img = await loadImage(ov.imageUrl);
+          loadedImagesMap.set(ov.imageUrl, img);
+        } catch (_) {}
+      }
+    }
   }
 
   const speedTimeline = new SpeedTimeline(
@@ -151,6 +164,7 @@ export async function exportVideo(
           bgImage,
           sourceTime,
           transparent: options.transparent,
+          loadedImagesMap,
         });
 
         // Extract raw RGBA buffer and feed to FFmpeg
@@ -222,6 +236,7 @@ export async function exportVideo(
       bgImage,
       sourceTime,
       transparent: options.transparent,
+      loadedImagesMap,
     });
 
     options.onProgress?.((frameIndex + 1) / totalFrames);
@@ -289,10 +304,11 @@ interface FrameRenderContext {
   bgImage: HTMLImageElement | null;
   sourceTime: number;
   transparent: boolean;
+  loadedImagesMap?: Map<string, HTMLImageElement>;
 }
 
 function renderCompositeFrame(rc: FrameRenderContext) {
-  const { ctx, canvasWidth, canvasHeight, video, project, frame, frameImage, bgImage, sourceTime, transparent } = rc;
+  const { ctx, canvasWidth, canvasHeight, video, project, frame, frameImage, bgImage, sourceTime, transparent, loadedImagesMap = new Map() } = rc;
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
@@ -462,6 +478,12 @@ function renderCompositeFrame(rc: FrameRenderContext) {
 
   // 10. Draw Watermark Badge
   drawWatermark(ctx, canvasWidth, canvasHeight, project.watermark);
+
+  // 10b. Draw Typewriter Stroke Captions & Headings
+  drawTypewriterOverlays(ctx, canvasWidth, canvasHeight, project.typewriters, sourceTime);
+
+  // 10c. Draw Brand Logos & Image Overlays
+  drawImageOverlays(ctx, canvasWidth, canvasHeight, project.imageOverlays, sourceTime, loadedImagesMap);
 
   // 11. Apply CapCut Video Effects (Vignette, Film Grain, Bloom, Scanlines)
   applyVideoEffects(ctx, canvasWidth, canvasHeight, project.effects);
@@ -675,6 +697,10 @@ function getFilterForColorGrade(grade?: ColorGradeType): string {
     case 'duneDesert': return 'sepia(0.42) saturate(1.38) hue-rotate(-22deg) contrast(1.22)';
     case 'bladeRunner': return 'contrast(1.38) saturate(1.48) hue-rotate(185deg) brightness(0.96)';
     case 'interstellar': return 'contrast(1.28) saturate(1.18) brightness(1.06) hue-rotate(12deg)';
+    case 'tealOrange': return 'contrast(1.3) saturate(1.35) hue-rotate(-15deg) brightness(1.02)';
+    case 'datamosh': return 'contrast(1.4) saturate(1.8) invert(0.08) hue-rotate(45deg)';
+    case 'infraredHeat': return 'invert(0.9) hue-rotate(180deg) saturate(2.2) contrast(1.4)';
+    case 'crtArcade': return 'contrast(1.35) brightness(1.1) saturate(1.3) sepia(0.1)';
     default: return 'none';
   }
 }
@@ -756,23 +782,76 @@ function drawSubtitles(
     const textToDraw = sub.uppercase ? sub.text.toUpperCase() : sub.text;
     const fontSize = sub.fontSize || 36;
 
+    const elapsed = sourceTime - sub.startTime;
+    const progress = Math.min(1, Math.max(0, elapsed / sub.duration));
+
+    let popScale = 1.0;
+    if (sub.style === 'popBounce') {
+      if (elapsed < 0.15) {
+        const t = elapsed / 0.15;
+        popScale = 0.5 + Math.sin(t * Math.PI * 0.5) * 0.65;
+      }
+    } else if (elapsed < 0.12) {
+      popScale = 0.82 + (elapsed / 0.12) * 0.23;
+    } else if (elapsed < 0.22) {
+      popScale = 1.05 - ((elapsed - 0.12) / 0.10) * 0.05;
+    }
+
     ctx.save();
     ctx.translate(x, y);
+    ctx.scale(popScale, popScale);
 
-    if (sub.style === 'hormozi') {
+    const words = textToDraw.trim().split(/\s+/);
+    const wordCount = words.length;
+    const activeWordIdx = Math.min(wordCount - 1, Math.floor(progress * wordCount));
+
+    if (sub.style === 'hormozi' || sub.style === 'karaoke') {
       ctx.font = `900 ${fontSize}px Impact, "Arial Black", sans-serif`;
-      ctx.textAlign = 'center';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
 
-      ctx.strokeStyle = sub.strokeHex || '#000000';
-      ctx.lineWidth = Math.max(6, fontSize * 0.22);
-      ctx.lineJoin = 'round';
-      ctx.miterLimit = 2;
-      ctx.strokeText(textToDraw, 0, 0);
+      const spaceWidth = ctx.measureText(' ').width;
+      let totalWidth = 0;
+      const wordWidths = words.map(w => {
+        const wWidth = ctx.measureText(w).width;
+        totalWidth += wWidth;
+        return wWidth;
+      });
+      totalWidth += spaceWidth * Math.max(0, wordCount - 1);
 
-      ctx.fillStyle = sub.colorHex || '#FDE047';
-      ctx.fillText(textToDraw, 0, 0);
-    } else if (sub.style === 'neonGlow') {
+      let currentX = -totalWidth / 2;
+
+      words.forEach((word, idx) => {
+        const isActive = idx === activeWordIdx;
+        const isPast = idx < activeWordIdx;
+
+        ctx.save();
+        const wordCenter = currentX + wordWidths[idx] / 2;
+        ctx.translate(wordCenter, 0);
+
+        if (isActive) {
+          ctx.scale(1.12, 1.12);
+        }
+
+        ctx.strokeStyle = sub.strokeHex || '#000000';
+        ctx.lineWidth = Math.max(6, fontSize * 0.22);
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeText(word, -wordWidths[idx] / 2, 0);
+
+        if (isActive) {
+          ctx.fillStyle = '#38BDF8';
+        } else if (isPast) {
+          ctx.fillStyle = sub.colorHex || '#FDE047';
+        } else {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        }
+        ctx.fillText(word, -wordWidths[idx] / 2, 0);
+        ctx.restore();
+
+        currentX += wordWidths[idx] + spaceWidth;
+      });
+    } else if (sub.style === 'neonGlow' || sub.style === 'popBounce') {
       ctx.font = `800 ${fontSize}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -781,7 +860,7 @@ function drawSubtitles(
       const padX = 24;
       const padY = 12;
 
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
+      ctx.fillStyle = 'rgba(10, 15, 30, 0.88)';
       ctx.strokeStyle = sub.colorHex || '#38BDF8';
       ctx.shadowColor = sub.colorHex || '#38BDF8';
       ctx.shadowBlur = 18;

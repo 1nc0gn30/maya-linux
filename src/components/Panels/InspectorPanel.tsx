@@ -1,7 +1,7 @@
 import React from 'react';
 import { ProjectState } from '../../types/project';
-import { Sparkles, Hand, Gauge, Type, Music, X, Clock, MapPin, Subtitles, Smile, Volume2, Shield, Scissors } from 'lucide-react';
-import { ZoomFocus, AnimationCurve, TapStyle, BadgeStyle, SubtitleStyle, StickerAnimation } from '../../types/models';
+import { Sparkles, Hand, Gauge, Type, Music, X, Clock, MapPin, Subtitles, Smile, Volume2, Shield, Scissors, Crown, Trash2, RotateCw } from 'lucide-react';
+import { ZoomFocus, AnimationCurve, TapStyle, BadgeStyle, SubtitleStyle, StickerAnimation, TypewriterStyle, ImageOverlayAnimation, TransitionType } from '../../types/models';
 
 interface InspectorPanelProps {
   project: ProjectState;
@@ -13,6 +13,62 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
 
   const close = () => onChange({ selectedEvent: null });
   const totalDuration = Math.max(1, project.videoDuration || 10);
+
+  const removeSelected = () => {
+    if (!project.selectedEvent) return;
+    const { type, id } = project.selectedEvent;
+    if (type === 'zoom') {
+      onChange({
+        animations: project.animations.filter(a => a.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'tap') {
+      onChange({
+        tapEvents: project.tapEvents.filter(t => t.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'overlay') {
+      onChange({
+        overlays: (project.overlays || []).filter(o => o.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'subtitle') {
+      onChange({
+        subtitles: (project.subtitles || []).filter(s => s.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'sticker') {
+      onChange({
+        stickers: (project.stickers || []).filter(s => s.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'transition') {
+      onChange({
+        transitions: (project.transitions || []).filter(tr => tr.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'audio') {
+      onChange({
+        audioTracks: (project.audioTracks || []).map(a => a.id === id ? null : a).filter(Boolean) as any,
+        selectedEvent: null,
+      });
+    } else if (type === 'speed') {
+      onChange({
+        speedSegments: project.speedSegments.filter(s => s.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'typewriter') {
+      onChange({
+        typewriters: (project.typewriters || []).filter(tw => tw.id !== id),
+        selectedEvent: null,
+      });
+    } else if (type === 'imageOverlay') {
+      onChange({
+        imageOverlays: (project.imageOverlays || []).filter(img => img.id !== id),
+        selectedEvent: null,
+      });
+    }
+  };
 
   // 1. Audio Track Inspector
   if (project.selectedEvent.type === 'audio') {
@@ -178,6 +234,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
               />
             </div>
           )}
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Audio Track</span>
+          </button>
         </div>
       </div>
     );
@@ -363,6 +430,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             ))}
           </div>
         </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Zoom Event</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -514,6 +592,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             onChange={(e) => update({ diameterFraction: parseFloat(e.target.value) })}
             className="w-full accent-pink-500 cursor-pointer"
           />
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Tap Event</span>
+          </button>
         </div>
       </div>
     );
@@ -701,6 +790,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             className="w-full accent-emerald-500 cursor-pointer"
           />
         </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Callout</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -829,6 +929,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
               className="w-full accent-amber-500 cursor-pointer"
             />
           </div>
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Speed Segment</span>
+          </button>
         </div>
       </div>
     );
@@ -979,6 +1090,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             />
           </div>
         </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Caption</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -1103,6 +1225,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             />
           </div>
         </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Sticker</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -1209,6 +1342,480 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ project, onChang
             className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
           >
             Reset to Full Video
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 8. Cinema Transition Inspector
+  if (project.selectedEvent.type === 'transition') {
+    const tr = (project.transitions || []).find(t => t.id === project.selectedEvent?.id);
+    if (!tr) return null;
+
+    const update = (partial: Partial<typeof tr>) => {
+      onChange({
+        transitions: (project.transitions || []).map(t => (t.id === tr.id ? { ...t, ...partial } : t)),
+      });
+    };
+
+    return (
+      <div className="w-72 border-l border-slate-800/80 bg-dark-900/80 backdrop-blur p-4 select-none text-xs space-y-5 overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div className="flex items-center space-x-2 font-semibold text-purple-400">
+            <RotateCw className="w-4 h-4" />
+            <span>Cinema Transition</span>
+          </div>
+          <button onClick={close} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Transition Preset Type */}
+        <div className="space-y-1.5">
+          <label className="text-slate-400 text-[11px] font-medium">Transition Cut Style</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { id: 'whipPan', label: 'Whip Pan' },
+              { id: 'crashZoom', label: 'Crash Zoom' },
+              { id: 'lightLeakFlash', label: 'Light Leak' },
+              { id: 'rgbGlitch', label: 'RGB Glitch' },
+              { id: 'filmBurn', label: 'Film Burn' },
+              { id: 'vortexSwirl', label: 'Vortex Swirl' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                onClick={() => update({ type: p.id as TransitionType })}
+                className={`py-1.5 px-2 rounded-xl text-left font-medium text-[11px] truncate border transition ${
+                  tr.type === p.id
+                    ? 'bg-purple-500/20 border-purple-400 text-purple-300 shadow-sm'
+                    : 'bg-dark-950/60 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Direction (for Whip Pan) */}
+        {tr.type === 'whipPan' && (
+          <div className="space-y-1.5">
+            <label className="text-slate-400 text-[11px] font-medium">Pan Direction</label>
+            <div className="grid grid-cols-4 gap-1 bg-dark-950 p-1 rounded-xl border border-slate-800">
+              {(['left', 'right', 'up', 'down'] as const).map((dir) => (
+                <button
+                  key={dir}
+                  onClick={() => update({ direction: dir })}
+                  className={`py-1 rounded-lg capitalize font-medium text-[10px] transition ${
+                    tr.direction === dir ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {dir}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Timeline Timing */}
+        <div className="space-y-3">
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-purple-400" />
+                <span>Start Time</span>
+              </span>
+              <span className="font-mono text-purple-300">{tr.startTime.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={totalDuration}
+              step="0.05"
+              value={tr.startTime}
+              onChange={(e) => update({ startTime: Math.max(0, parseFloat(e.target.value)) })}
+              className="w-full accent-purple-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-purple-400" />
+                <span>Duration</span>
+              </span>
+              <span className="font-mono text-purple-300">{tr.duration.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0.15"
+              max="2.0"
+              step="0.05"
+              value={tr.duration}
+              onChange={(e) => update({ duration: Math.max(0.15, parseFloat(e.target.value)) })}
+              className="w-full accent-purple-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Intensity */}
+        <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+          <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+            <span>Effect Intensity</span>
+            <span className="font-mono text-purple-300">{Math.round((tr.intensity || 1.0) * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0.2"
+            max="2.0"
+            step="0.1"
+            value={tr.intensity || 1.0}
+            onChange={(e) => update({ intensity: parseFloat(e.target.value) })}
+            className="w-full accent-purple-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Transition</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 9. Typewriter Stroke Typed Overlay Inspector
+  if (project.selectedEvent.type === 'typewriter') {
+    const tw = (project.typewriters || []).find(t => t.id === project.selectedEvent?.id);
+    if (!tw) return null;
+
+    const update = (partial: Partial<typeof tw>) => {
+      onChange({
+        typewriters: (project.typewriters || []).map(t => (t.id === tw.id ? { ...t, ...partial } : t)),
+      });
+    };
+
+    return (
+      <div className="w-72 border-l border-slate-800/80 bg-dark-900/80 backdrop-blur p-4 select-none text-xs space-y-5 overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div className="flex items-center space-x-2 font-semibold text-cyan-400">
+            <Type className="w-4 h-4" />
+            <span>Typewriter Caption</span>
+          </div>
+          <button onClick={close} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Text */}
+        <div className="space-y-1.5">
+          <label className="text-slate-400 text-[11px] font-medium">Main Heading Text</label>
+          <textarea
+            value={tw.text}
+            onChange={(e) => update({ text: e.target.value })}
+            rows={2}
+            className="w-full bg-dark-950 border border-slate-800 rounded-xl p-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono text-xs resize-none"
+          />
+        </div>
+
+        {/* Subtitle / Explainer */}
+        <div className="space-y-1.5">
+          <label className="text-slate-400 text-[11px] font-medium">Subtitle / Narrative Explainer</label>
+          <textarea
+            value={tw.subtitle || ''}
+            onChange={(e) => update({ subtitle: e.target.value })}
+            rows={2}
+            className="w-full bg-dark-950 border border-slate-800 rounded-xl p-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs resize-none"
+          />
+        </div>
+
+        {/* Phase / Tag */}
+        <div className="space-y-1.5">
+          <label className="text-slate-400 text-[11px] font-medium">Phase Badge / Tag</label>
+          <input
+            type="text"
+            value={tw.tag || ''}
+            onChange={(e) => update({ tag: e.target.value })}
+            placeholder="e.g. PHASE 01 // SYNTHESIS"
+            className="w-full bg-dark-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs font-mono"
+          />
+        </div>
+
+        {/* Timing */}
+        <div className="space-y-3">
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-cyan-400" />
+                <span>Start Time</span>
+              </span>
+              <span className="font-mono text-cyan-300">{tw.startTime.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={totalDuration}
+              step="0.05"
+              value={tw.startTime}
+              onChange={(e) => update({ startTime: parseFloat(e.target.value) })}
+              className="w-full accent-cyan-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-cyan-400" />
+                <span>Duration</span>
+              </span>
+              <span className="font-mono text-cyan-300">{tw.duration.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="20"
+              step="0.1"
+              value={tw.duration}
+              onChange={(e) => update({ duration: parseFloat(e.target.value) })}
+              className="w-full accent-cyan-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Typing Speed & Font Size */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1 p-2 rounded-xl bg-dark-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400">Speed ({tw.typingSpeedCps || 24} cps)</span>
+            <input
+              type="range"
+              min="8"
+              max="60"
+              step="1"
+              value={tw.typingSpeedCps || 24}
+              onChange={(e) => update({ typingSpeedCps: parseInt(e.target.value) })}
+              className="w-full accent-cyan-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1 p-2 rounded-xl bg-dark-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400">Font ({tw.fontSize || 32}px)</span>
+            <input
+              type="range"
+              min="18"
+              max="56"
+              step="2"
+              value={tw.fontSize || 32}
+              onChange={(e) => update({ fontSize: parseInt(e.target.value) })}
+              className="w-full accent-cyan-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Position Y */}
+        <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+          <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+            <span className="flex items-center space-x-1">
+              <MapPin className="w-3 h-3 text-cyan-400" />
+              <span>Vertical Position Y</span>
+            </span>
+            <span className="font-mono text-cyan-300">{Math.round(tw.position.y * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0.05"
+            max="0.95"
+            step="0.01"
+            value={tw.position.y}
+            onChange={(e) => update({ position: { ...tw.position, y: parseFloat(e.target.value) } })}
+            className="w-full accent-cyan-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Stroke Outline Width */}
+        <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+          <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+            <span>Stroke Outline Width</span>
+            <span className="font-mono text-cyan-300">{tw.strokeWidth || 4}px</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="12"
+            step="1"
+            value={tw.strokeWidth || 4}
+            onChange={(e) => update({ strokeWidth: parseInt(e.target.value) })}
+            className="w-full accent-cyan-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Typewriter Caption</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 10. Brand Asset & Image Overlay Inspector
+  if (project.selectedEvent.type === 'imageOverlay') {
+    const img = (project.imageOverlays || []).find(i => i.id === project.selectedEvent?.id);
+    if (!img) return null;
+
+    const update = (partial: Partial<typeof img>) => {
+      onChange({
+        imageOverlays: (project.imageOverlays || []).map(i => (i.id === img.id ? { ...i, ...partial } : i)),
+      });
+    };
+
+    return (
+      <div className="w-72 border-l border-slate-800/80 bg-dark-900/80 backdrop-blur p-4 select-none text-xs space-y-5 overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div className="flex items-center space-x-2 font-semibold text-amber-400">
+            <Crown className="w-4 h-4" />
+            <span>Brand Overlay</span>
+          </div>
+          <button onClick={close} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Preview Thumbnail */}
+        <div className="p-3 bg-dark-950 rounded-xl border border-slate-800 flex flex-col items-center justify-center space-y-2">
+          <img
+            src={img.imageUrl}
+            alt={img.name}
+            className="max-h-24 max-w-full object-contain rounded drop-shadow-md"
+          />
+          <span className="font-semibold text-slate-200 text-[11px] truncate w-full text-center">
+            {img.name || 'Brand Graphic'}
+          </span>
+        </div>
+
+        {/* Timing */}
+        <div className="space-y-3">
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-amber-400" />
+                <span>Start Time</span>
+              </span>
+              <span className="font-mono text-amber-300">{img.startTime.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={totalDuration}
+              step="0.05"
+              value={img.startTime}
+              onChange={(e) => update({ startTime: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-amber-400" />
+                <span>Duration</span>
+              </span>
+              <span className="font-mono text-amber-300">{img.duration.toFixed(2)}s</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="30"
+              step="0.1"
+              value={img.duration}
+              onChange={(e) => update({ duration: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Scale & Opacity */}
+        <div className="space-y-3">
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span>Scale ({Math.round(img.scale * 100)}%)</span>
+              <span className="font-mono text-amber-300">{img.scale.toFixed(2)}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="2.0"
+              step="0.02"
+              value={img.scale}
+              onChange={(e) => update({ scale: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-dark-950/60 border border-slate-800">
+            <div className="flex justify-between text-slate-300 text-[11px] font-medium">
+              <span>Opacity ({Math.round((img.opacity ?? 1) * 100)}%)</span>
+              <span className="font-mono text-amber-300">{((img.opacity ?? 1) * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="1.0"
+              step="0.05"
+              value={img.opacity ?? 1}
+              onChange={(e) => update({ opacity: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Position X & Y */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1 p-2 rounded-xl bg-dark-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400">Position X ({Math.round(img.position.x * 100)}%)</span>
+            <input
+              type="range"
+              min="0.02"
+              max="0.98"
+              step="0.01"
+              value={img.position.x}
+              onChange={(e) => update({ position: { ...img.position, x: parseFloat(e.target.value) } })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-1 p-2 rounded-xl bg-dark-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400">Position Y ({Math.round(img.position.y * 100)}%)</span>
+            <input
+              type="range"
+              min="0.02"
+              max="0.98"
+              step="0.01"
+              value={img.position.y}
+              onChange={(e) => update({ position: { ...img.position, y: parseFloat(e.target.value) } })}
+              className="w-full accent-amber-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Delete Action */}
+        <div className="pt-2 border-t border-slate-800">
+          <button
+            onClick={removeSelected}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center space-x-1.5 transition text-xs font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Brand Overlay</span>
           </button>
         </div>
       </div>

@@ -16,6 +16,8 @@ import {
   ProgressBarConfig,
   MetaEditsConfig,
   TransitionItem,
+  TypewriterOverlayItem,
+  ImageOverlayItem,
 } from './models';
 
 export interface ProjectState {
@@ -70,6 +72,8 @@ export interface ProjectState {
   overlays: TextOverlay[];
   subtitles: SubtitleItem[];
   stickers: StickerItem[];
+  typewriters?: TypewriterOverlayItem[];
+  imageOverlays?: ImageOverlayItem[];
   audioTracks: AudioTrack[];
   selectedEvent: SelectedEvent;
   snapToBeat?: boolean;
